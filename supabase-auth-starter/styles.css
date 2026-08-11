@@ -1,0 +1,168 @@
+:root {
+  --bg: #f4f1ea;
+  --paper: #ffffff;
+  --ink: #171411;
+  --muted: #6f675c;
+  --line: rgba(23, 20, 17, 0.12);
+  --accent: #9b1c20;
+  --accent-strong: #7d1418;
+  --danger: #b42318;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #f7f4ee 0%, #efe8dd 100%);
+  color: var(--ink);
+  font-family: "Segoe UI", sans-serif;
+}
+
+.shell {
+  width: min(1100px, calc(100vw - 32px));
+  margin: 24px auto 48px;
+  display: grid;
+  gap: 18px;
+}
+
+.panel {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.panel-head {
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-head h1,
+.panel-head h2,
+.panel-head h3,
+.card h2,
+.card h3 {
+  margin: 0;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.muted,
+.hint {
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 18px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+label {
+  display: block;
+  margin: 14px 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+}
+
+textarea {
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: var(--accent-strong);
+}
+
+.btn.danger {
+  color: var(--danger);
+}
+
+.code-block {
+  margin: 0;
+  padding: 14px;
+  background: #161311;
+  color: #f8f4ec;
+  border-radius: 8px;
+  overflow: auto;
+  min-height: 92px;
+  white-space: pre-wrap;
+}
+
+.pill-wrap {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(155, 28, 32, 0.08);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.muted-pill {
+  background: rgba(23, 20, 17, 0.06);
+  color: var(--muted);
+}
+
+@media (max-width: 800px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

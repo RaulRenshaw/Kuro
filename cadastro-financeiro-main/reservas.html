@@ -1,0 +1,2753 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KURO / SHIRO — Painel de Reservas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface-alt: #f9f8f6;
+    --border: #e4e2dc;
+    --border-strong: #ccc9c0;
+    --text: #1a1a18;
+    --text-muted: #888780;
+    --text-secondary: #5f5e5a;
+    --accent: #2563eb;
+    --accent-bg: #eff6ff;
+    --accent-border: #bfdbfe;
+    --success-bg: #f0fdf4;
+    --success-text: #15803d;
+    --success-border: #bbf7d0;
+    --danger-bg: #fef2f2;
+    --danger-text: #b91c1c;
+    --danger-border: #fecaca;
+    --warning-bg: #fffbeb;
+    --warning-text: #b45309;
+    --warning-border: #fde68a;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1a18;
+      --surface: #242422;
+      --surface-alt: #1f1f1d;
+      --border: #333330;
+      --border-strong: #444441;
+      --text: #f0ede8;
+      --text-muted: #888780;
+      --text-secondary: #b4b2a9;
+      --accent: #3b82f6;
+      --accent-bg: #1e3a5f;
+      --accent-border: #2563eb;
+      --success-bg: #14301f;
+      --success-text: #4ade80;
+      --success-border: #166534;
+      --danger-bg: #2d1515;
+      --danger-text: #f87171;
+      --danger-border: #7f1d1d;
+      --warning-bg: #2d2008;
+      --warning-text: #fbbf24;
+      --warning-border: #78350f;
+    }
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  .topbar {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 1.5rem;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .topbar-brand { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .topbar-brand i { color: var(--accent); font-size: 20px; }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; }
+  .app { max-width: 760px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+  .screen-wide { max-width: min(100vw - 24px, 1600px); }
+  .nav {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    overflow-x: auto;
+  }
+  .nav-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .nav-btn:hover { background: var(--surface-alt); color: var(--text); }
+  .nav-btn.active { background: var(--accent); color: #fff; font-weight: 500; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .card-title i { color: var(--accent); }
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .stat {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-val { font-size: 22px; font-weight: 600; margin-top: 4px; }
+  .stat-val.accent { color: var(--accent); }
+  label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 5px;
+    margin-top: 14px;
+    font-weight: 500;
+  }
+  label:first-child { margin-top: 0; }
+  input, select, textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 0.5px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface-alt);
+    color: var(--text);
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    appearance: auto;
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  input[type="checkbox"] { width: auto; accent-color: var(--accent); }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-bg);
+  }
+  input:disabled { opacity: 0.6; cursor: not-allowed; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 0.5px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+  }
+  .btn:hover { background: var(--surface-alt); }
+  .btn:active { transform: scale(0.98); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { opacity: 0.92; }
+  .btn.danger { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
+  .btn.success-btn { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 1.25rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .badge.confirmed { background: var(--success-bg); color: var(--success-text); border: 0.5px solid var(--success-border); }
+  .badge.pending { background: var(--warning-bg); color: var(--warning-text); border: 0.5px solid var(--warning-border); }
+  .badge.absent { background: var(--danger-bg); color: var(--danger-text); border: 0.5px solid var(--danger-border); }
+  .badge.cancelled { background: #e7e5e4; color: #57534e; border: 0.5px solid #d6d3d1; }
+  .reserva-item {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 10px;
+    box-shadow: var(--shadow);
+  }
+  .reserva-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .reserva-nome { font-size: 15px; font-weight: 600; }
+  .reserva-nome-tag { font-size: 13px; color: var(--text-muted); font-weight: 400; margin-left: 4px; }
+  .reserva-sub { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+  .reserva-info {
+    display: flex;
+    gap: 14px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .info-chip {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .info-chip i { font-size: 14px; }
+  .reserva-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .comprovante-box {
+    border: 1.5px dashed var(--border-strong);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    background: var(--surface-alt);
+    margin-top: 5px;
+  }
+  .comprovante-box:hover { border-color: var(--accent); background: var(--accent-bg); }
+  .comprovante-box p { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+  .comprovante-box i { font-size: 28px; color: var(--text-muted); }
+  .comprovante-box:hover i { color: var(--accent); }
+  .comprovante-preview {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-top: 8px;
+    border: 0.5px solid var(--border);
+  }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 14px; }
+  .empty i { font-size: 36px; display: block; margin-bottom: 10px; color: var(--text-muted); }
+  .presenca-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 0.5px solid var(--border);
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .presenca-item:last-child { border-bottom: none; }
+  .presenca-name { font-size: 14px; font-weight: 600; }
+  .presenca-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .presenca-btns { display: flex; gap: 6px; align-items: center; }
+  .modal-img {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+  }
+  .modal-img img { max-width: 100%; max-height: 90vh; border-radius: 8px; }
+  .modal-img-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 0.5px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 200;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    transition: transform 0.25s ease;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .section-hint { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .sheet-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .sheet-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sheet-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .sheet-summary-card {
+    background: linear-gradient(180deg, #111111 0%, #1f1f1f 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    border: 1px solid #2d2d2d;
+    box-shadow: var(--shadow);
+  }
+  .sheet-summary-card .kicker {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.65);
+  }
+  .sheet-summary-card .value {
+    font-size: 22px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+  .sheet-summary-card .sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.72);
+    margin-top: 2px;
+  }
+  .sheet-table-wrap {
+    border: 1px solid #d7d4cd;
+    border-radius: 12px;
+    overflow: auto;
+    max-height: none;
+    flex: 1;
+    min-height: 460px;
+    background: #fff;
+    box-shadow: var(--shadow);
+  }
+  .sheet-table {
+    width: 100%;
+    min-width: 1480px;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .sheet-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--accent);
+    color: #fff;
+    text-align: left;
+    padding: 9px 10px;
+    border: 1px solid rgba(255,255,255,0.18);
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .sheet-table tbody td {
+    padding: 7px 10px;
+    border: 1px solid #d9d7d2;
+    vertical-align: middle;
+    background: #fff;
+    white-space: nowrap;
+    color: #000;
+    font-size: 13px;
+  }
+  .sheet-table thead th:first-child,
+  .sheet-table tbody td:first-child { border-left: 1px solid #d9d7d2; }
+  .sheet-table thead th:last-child,
+  .sheet-table tbody td:last-child { border-right: 1px solid #d9d7d2; }
+  .sheet-table tbody tr:nth-child(even) td { background: #f4f4f4; }
+  .sheet-table tbody tr:hover td { background: #eef5ff; }
+  .sheet-table .muted { color: var(--text-muted); }
+  .sheet-table .center { text-align: center; }
+  .sheet-table .right { text-align: right; }
+  .sheet-table .actions-cell { display: flex; gap: 6px; align-items: center; }
+  .sheet-table .mini-btn { padding: 4px 8px; font-size: 11px; border-radius: 6px; }
+  .sheet-empty { padding: 2rem; text-align: center; color: var(--text-muted); }
+  #screen-planilha .card {
+    min-height: calc(100vh - 230px);
+    display: flex;
+    flex-direction: column;
+  }
+  /* KURO / SHIRO visual system */
+  :root {
+    --paper: #FAF7F1;
+    --paper-dim: #F1ECE2;
+    --ink: #111011;
+    --ink-soft: #1C1A1B;
+    --red: #9E1B1B;
+    --red-bright: #C22B2B;
+    --red-deep: #6E1212;
+    --stone: #8C8579;
+    --stone-light: #B9B2A5;
+    --hairline: rgba(17,16,17,0.10);
+    --hairline-dark: rgba(250,247,241,0.09);
+    --surface: #FFFFFF;
+    --surface-alt: #F7F3EB;
+    --border: rgba(17,16,17,0.10);
+    --border-strong: rgba(17,16,17,0.18);
+    --text: #111011;
+    --text-secondary: #4F4B45;
+    --text-muted: #7A746B;
+    --accent: var(--red);
+    --accent-bg: rgba(158,27,27,0.08);
+    --accent-border: rgba(158,27,27,0.18);
+    --success-bg: rgba(59,109,17,0.10);
+    --success-text: #3B6D11;
+    --success-border: rgba(59,109,17,0.20);
+    --danger-bg: rgba(158,27,27,0.08);
+    --danger-text: var(--red-deep);
+    --danger-border: rgba(158,27,27,0.20);
+    --warning-bg: rgba(140,133,121,0.10);
+    --warning-text: #6D665B;
+    --warning-border: rgba(140,133,121,0.18);
+  }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .app-shell {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+  .sidebar {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    min-height: 100vh;
+  }
+  .brand-mark {
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--hairline-dark);
+  }
+  .brand-logo {
+    width: 118px;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 12px;
+  }
+  .kanji-stamp {
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--red);
+    color: var(--paper);
+    border-radius: 3px;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 26px;
+    margin-bottom: 12px;
+    filter: url(#hanko-rough);
+  }
+  .brand-name {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 20px;
+    letter-spacing: 0.14em;
+    margin: 0;
+  }
+  .brand-sub {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--stone-light);
+    text-transform: uppercase;
+    margin: 4px 0 0;
+  }
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+  }
+  .sidebar .nav-btn,
+  .sidebar .nav-btn:hover,
+  .sidebar .nav-btn.active {
+    justify-content: flex-start;
+    border-radius: 4px;
+    padding: 11px 12px;
+    min-width: 0;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--stone-light);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+  .sidebar .nav-btn:hover { background: rgba(250,247,241,0.04); color: var(--paper); }
+  .sidebar .nav-btn.active { background: rgba(158,27,27,0.16); color: var(--paper); }
+  .sidebar .nav-btn .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .5;
+    flex: 0 0 auto;
+  }
+  .sidebar .nav-btn.active .dot { opacity: 1; background: var(--red); }
+  .sidebar-foot {
+    padding-top: 18px;
+    border-top: 1px solid var(--hairline-dark);
+    font-size: 11px;
+    color: var(--stone);
+    letter-spacing: 0.05em;
+  }
+  .sidebar-foot b { color: var(--stone-light); font-weight: 500; }
+  .main {
+    min-width: 0;
+    padding: 24px 28px 32px;
+  }
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin: 0 0 18px;
+    padding: 12px 0 18px;
+    background: linear-gradient(180deg, rgba(250,247,241,0.98) 0%, rgba(250,247,241,0.92) 70%, rgba(250,247,241,0) 100%);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(17,16,17,0.06);
+  }
+  .topbar-kicker {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 3px;
+  }
+  .topbar-brand {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .topbar-brand i { color: var(--red); font-size: 20px; }
+  .topbar-date {
+    font-size: 12.5px;
+    color: var(--stone);
+    margin-top: 4px;
+  }
+  .topbar-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .topbar-actions .user-badge {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .topbar-actions .btn {
+    background: rgba(255,255,255,0.8);
+    border-color: rgba(17,16,17,0.16);
+    border-radius: 6px;
+  }
+  .topbar-actions .btn.primary {
+    background: var(--red);
+    color: var(--paper);
+    border-color: var(--red);
+  }
+  .main-body {
+    width: 100%;
+    max-width: none;
+  }
+  .dashboard-panel {
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .dashboard-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .dashboard-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .card,
+  .sheet-summary-card,
+  .stat,
+  .reserva-item,
+  .sheet-table-wrap,
+  .comprovante-box {
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    box-shadow: none;
+    width: 100%;
+  }
+  .card { padding: 18px 22px; }
+  .card-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+  .card-title i { color: var(--red); }
+  .stat-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 22px;
+  }
+  .stat {
+    padding: 18px 20px;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+  }
+  .stat-label,
+  .sheet-summary-card .kicker {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stone);
+  }
+  .stat-val {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 28px;
+    color: var(--ink);
+  }
+  .stat-sub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--stone);
+  }
+  .stat-val.accent { color: var(--red); }
+  .agenda-table-wrap {
+    width: 100%;
+    overflow: auto;
+    border-top: 1px solid var(--hairline);
+  }
+  .agenda-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .agenda-table thead th {
+    text-align: left;
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--stone);
+    font-weight: 600;
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--paper-dim);
+  }
+  .agenda-table tbody td {
+    padding: 15px 22px;
+    border-bottom: 1px solid var(--hairline);
+    vertical-align: middle;
+    font-size: 13px;
+    color: var(--ink);
+    word-break: break-word;
+  }
+  .agenda-table tbody tr:last-child td { border-bottom: none; }
+  .agenda-table tbody tr:hover td { background: var(--paper-dim); }
+  .agenda-table .right { text-align: right; }
+  .agenda-table .center { text-align: center; }
+  .agenda-empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--stone);
+  }
+  .cliente {
+    font-weight: 600;
+  }
+  .cliente-sub {
+    display: block;
+    font-size: 11.5px;
+    color: var(--stone);
+    font-weight: 400;
+    margin-top: 2px;
+  }
+  .hanko {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .hanko-mark {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 12px;
+    filter: url(#hanko-rough);
+  }
+  .hanko.confirmada .hanko-mark { background: var(--red); color: var(--paper); }
+  .hanko.confirmada { color: var(--red-deep); }
+  .hanko.pendente .hanko-mark { background: none; border: 1.4px solid var(--red); color: var(--red); }
+  .hanko.pendente { color: var(--stone); }
+  .hanko.cancelada .hanko-mark { background: none; border: 1.4px solid var(--stone-light); color: var(--stone-light); }
+  .hanko.cancelada { color: var(--stone-light); }
+  .pay-pill {
+    font-size: 11.5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    display: inline-flex;
+  }
+  .pay-pill.pago { background: rgba(59,109,17,0.10); color: #3B6D11; }
+  .pay-pill.aberto { background: var(--paper-dim); color: var(--stone); }
+  .pay-pill.reembolsado { background: rgba(158,27,27,0.08); color: var(--red-deep); }
+  .sheet-toolbar {
+    gap: 16px;
+    margin-bottom: 18px;
+    align-items: center;
+  }
+  .sheet-tools { gap: 10px; }
+  .sheet-filters,
+  .presence-filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .sheet-filters input,
+  .sheet-filters select,
+  .presence-filters input {
+    min-width: 160px;
+    max-width: 240px;
+  }
+  .sheet-tools .btn,
+  .actions .btn,
+  .reserva-actions .btn {
+    border-radius: 6px;
+  }
+  .btn {
+    border: 1px solid var(--hairline);
+    background: #fff;
+    color: var(--ink);
+  }
+  .btn.primary {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--paper);
+  }
+  .btn.success-btn {
+    background: rgba(59,109,17,0.10);
+    color: var(--success-text);
+    border-color: rgba(59,109,17,0.20);
+  }
+  .btn.danger {
+    background: rgba(158,27,27,0.08);
+    color: var(--red-deep);
+    border-color: rgba(158,27,27,0.18);
+  }
+  .badge {
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge.confirmed { color: var(--red-deep); background: rgba(158,27,27,0.08); border-color: rgba(158,27,27,0.16); }
+  .badge.pending { color: var(--stone); background: rgba(140,133,121,0.10); border-color: rgba(140,133,121,0.18); }
+  .badge.absent { color: var(--red-deep); background: rgba(158,27,27,0.08); border-color: rgba(158,27,27,0.18); }
+  .badge.cancelled { color: var(--stone); background: rgba(140,133,121,0.10); border-color: rgba(140,133,121,0.18); }
+  #lista-reservas { display: flex; flex-direction: column; gap: 12px; }
+  .reserva-item { padding: 16px 18px; margin-bottom: 0; }
+  .reserva-nome, .presenca-name { font-family: 'Shippori Mincho', serif; font-size: 18px; }
+  .reserva-nome-tag { color: var(--stone); }
+  .reserva-sub, .reserva-info, .presenca-date, .section-hint { color: var(--stone); }
+  .info-chip { color: var(--text-secondary); }
+  .sheet-summary {
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .sheet-summary-card {
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid var(--hairline);
+  }
+  .sheet-summary-card .value {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 26px;
+    color: var(--ink);
+  }
+  .sheet-summary-card .sub { color: var(--stone); }
+  .sheet-table-wrap {
+    background: #fff;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    overflow: auto;
+    max-height: none;
+    min-height: 520px;
+    width: 100%;
+  }
+  .sheet-table {
+    min-width: 1740px;
+  }
+  .sheet-table thead th {
+    background: var(--paper-dim);
+    color: var(--stone);
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    border-color: var(--hairline);
+  }
+  .sheet-table tbody td {
+    border-color: var(--hairline);
+    color: var(--ink);
+  }
+  .sheet-table tbody tr:nth-child(even) td { background: #f8f6f0; }
+  .sheet-table tbody tr:hover td { background: rgba(158,27,27,0.04); }
+  .sheet-table .mini-btn {
+    border-radius: 5px;
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  .agenda-table .actions-cell,
+  .sheet-table .actions-cell {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .agenda-table .mini-btn,
+  .sheet-table .mini-btn {
+    border-radius: 5px;
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+  .empty, .sheet-empty {
+    color: var(--stone);
+  }
+  .comprovante-box:hover {
+    border-color: var(--red);
+    background: rgba(158,27,27,0.04);
+  }
+  .editor-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+    gap: 18px;
+  }
+  .editor-main,
+  .editor-aside,
+  .presence-board,
+  .shift-board {
+    background: #fff;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .editor-head,
+  .presence-head,
+  .shift-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .editor-head-copy,
+  .presence-head-copy,
+  .shift-head-copy {
+    min-width: 0;
+  }
+  .editor-kicker,
+  .presence-kicker,
+  .shift-kicker {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 4px;
+  }
+  .editor-title,
+  .presence-title,
+  .shift-title {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .editor-form {
+    padding: 18px 22px 22px;
+  }
+  .editor-section {
+    padding-top: 18px;
+    margin-top: 18px;
+    border-top: 1px solid var(--hairline);
+  }
+  .editor-section:first-child {
+    padding-top: 0;
+    margin-top: 0;
+    border-top: 0;
+  }
+  .editor-section-title {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 14px;
+  }
+  .row.row-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .field-note {
+    margin-top: 5px;
+    font-size: 11.5px;
+    color: var(--stone);
+  }
+  .editor-aside {
+    align-self: start;
+    position: sticky;
+    top: 106px;
+  }
+  .aside-block {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .aside-block:last-child {
+    border-bottom: 0;
+  }
+  .aside-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stone);
+    margin-bottom: 10px;
+  }
+  .aside-reserva {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 22px;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .aside-pagante {
+    margin-top: 6px;
+    color: var(--stone);
+    font-size: 12.5px;
+  }
+  .aside-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .aside-metric {
+    padding: 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    background: var(--paper);
+  }
+  .aside-metric .metric-kicker {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--stone);
+  }
+  .aside-metric .metric-value {
+    font-family: 'Shippori Mincho', serif;
+    font-size: 18px;
+    color: var(--ink);
+    margin-top: 4px;
+  }
+  .aside-metric .metric-sub {
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--stone);
+  }
+  .aside-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--hairline);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ink);
+    background: #fff;
+  }
+  .status-chip::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--stone-light);
+  }
+  .status-chip.confirmed::before { background: var(--red); }
+  .status-chip.pending::before { background: var(--stone); }
+  .status-chip.cancelled::before { background: var(--stone-light); }
+  .status-chip.paid::before { background: #3B6D11; }
+  .status-chip.open::before { background: var(--stone); }
+  .aside-list {
+    display: grid;
+    gap: 8px;
+    color: var(--stone);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .presence-body,
+  .shift-body {
+    padding: 18px 22px 22px;
+  }
+  .presence-empty,
+  .shift-empty {
+    padding: 28px 0;
+    text-align: center;
+    color: var(--stone);
+    font-size: 14px;
+  }
+  body.auth-locked .topbar,
+  body.auth-locked .app,
+  body.auth-locked .app-shell {
+    display: none !important;
+  }
+  .auth-gate {
+    min-height: 100vh;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background:
+      radial-gradient(circle at top left, rgba(158,27,27,0.08), transparent 28%),
+      linear-gradient(180deg, #f7f4ee 0%, #efe7dc 100%);
+  }
+  body.auth-locked .auth-gate {
+    display: flex;
+  }
+  .auth-card {
+    width: min(960px, 100%);
+    display: grid;
+    grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+    background: #fff;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 16px 60px rgba(17,16,17,0.10);
+  }
+  .auth-brand {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .auth-brand .brand-logo {
+    width: 112px;
+    margin: 0 0 12px;
+  }
+  .auth-brand h1 {
+    margin: 0;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 30px;
+    letter-spacing: 0.04em;
+  }
+  .auth-brand p {
+    margin: 8px 0 0;
+    color: var(--stone-light);
+    line-height: 1.6;
+  }
+  .auth-panel {
+    padding: 28px 24px;
+  }
+  .auth-panel h2 {
+    margin: 0;
+    font-family: 'Shippori Mincho', serif;
+    font-size: 24px;
+  }
+  .auth-panel .hint {
+    margin-top: 8px;
+    color: var(--stone);
+    font-size: 13px;
+  }
+  .auth-panel .status-box {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--hairline);
+    background: var(--paper);
+    color: var(--stone);
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .auth-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .auth-perms {
+    margin-top: 18px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .auth-perms .perm-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(158,27,27,0.08);
+    color: var(--red-deep);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  @media (max-width: 980px) {
+    .app-shell { grid-template-columns: 1fr; }
+    .sidebar {
+      position: relative;
+      min-height: auto;
+    }
+    .main { padding: 18px 14px 24px; }
+    .topbar { flex-direction: column; align-items: flex-start; }
+    .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .editor-layout { grid-template-columns: 1fr; }
+    .editor-aside { position: static; }
+    .row.row-3 { grid-template-columns: 1fr 1fr; }
+    .auth-card { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .stat-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .row { grid-template-columns: 1fr; }
+    .row.row-3 { grid-template-columns: 1fr; }
+    .stat-row { grid-template-columns: 1fr 1fr; }
+    .sheet-summary { grid-template-columns: 1fr 1fr; }
+    .aside-grid { grid-template-columns: 1fr; }
+    .nav-btn span { display: none; }
+    .topbar { padding: 0 1rem; }
+  }
+</style>
+</head>
+<body class="auth-locked">
+<div class="auth-gate" id="auth-gate">
+  <div class="auth-card">
+    <section class="auth-brand">
+      <div>
+        <img class="brand-logo" src="kuro-logo.png" alt="Logo Kuro">
+        <h1>KURO / SHIRO</h1>
+        <p>Sistema interno de reservas, presença, pagamentos e operação de sala.</p>
+      </div>
+      <div>
+        <p>O acesso ao painel depende de login no Supabase e das permissões atribuídas ao usuário.</p>
+      </div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="topbar-kicker">Acesso seguro</div>
+      <h2>Entrar no painel</h2>
+      <p class="hint">Use o mesmo usuário cadastrado no Supabase Auth.</p>
+
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="voce@empresa.com">
+
+      <label>Senha</label>
+      <input type="password" id="auth-password" placeholder="••••••••">
+
+      <div class="auth-actions">
+        <button class="btn primary" type="button" onclick="loginApp()"><i class="ti ti-login"></i> Entrar</button>
+        <button class="btn" type="button" onclick="carregarSessaoAtual()"><i class="ti ti-refresh"></i> Atualizar sessão</button>
+        <button class="btn" type="button" onclick="logoutApp()"><i class="ti ti-logout"></i> Sair</button>
+      </div>
+
+      <div class="status-box" id="auth-status-box">Aguardando autenticação.</div>
+      <div class="auth-perms" id="auth-permissions-preview"></div>
+    </section>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <i class="ti ti-calendar-event"></i>
+    Controle de Reservas
+  </div>
+  <div class="topbar-actions">
+    <button class="btn" onclick="showScreen('planilha')">
+      <i class="ti ti-table"></i> Planilha
+    </button>
+    <button class="btn primary" onclick="abrirNovaReserva()">
+      <i class="ti ti-plus"></i> Nova reserva
+    </button>
+    <button class="btn user-badge" type="button" id="auth-user-badge">Sessão indisponível</button>
+    <button class="btn" type="button" id="auth-logout-btn" onclick="logoutApp()">
+      <i class="ti ti-logout"></i> Sair
+    </button>
+  </div>
+</div>
+
+<div class="app screen-wide">
+  <div class="nav">
+    <button class="nav-btn active" onclick="showScreen('lista')" id="nav-lista">
+      <i class="ti ti-list"></i> <span>Reservas</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('planilha')" id="nav-planilha">
+      <i class="ti ti-table"></i> <span>Planilha</span>
+    </button>
+    <button class="nav-btn" onclick="abrirNovaReserva()" id="nav-nova">
+      <i class="ti ti-plus"></i> <span>Nova</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('presenca')" id="nav-presenca">
+      <i class="ti ti-user-check"></i> <span>Presenças</span>
+    </button>
+    <button class="nav-btn" onclick="showScreen('alterar')" id="nav-alterar">
+      <i class="ti ti-calendar-edit"></i> <span>Alterar data</span>
+    </button>
+  </div>
+
+  <div class="screen" id="screen-planilha">
+    <div class="card">
+      <div class="sheet-toolbar">
+        <div>
+          <div class="card-title" style="margin-bottom:4px"><i class="ti ti-table"></i> Planilha de reservas</div>
+          <div class="section-hint">Visualização no estilo Excel com exportação para XLSX e CSV.</div>
+        </div>
+        <div class="sheet-tools">
+          <div class="sheet-filters">
+            <input type="search" id="sheet-search" placeholder="Buscar por pagante, reserva, motivo..." oninput="renderPlanilha()" style="min-width:280px;max-width:360px">
+            <input type="date" id="sheet-date-from" onchange="renderPlanilha()">
+            <input type="date" id="sheet-date-to" onchange="renderPlanilha()">
+            <select id="sheet-status" onchange="renderPlanilha()">
+              <option value="">Todos os status</option>
+              <option value="pendente">Pendente</option>
+              <option value="compareceu">Compareceu</option>
+              <option value="nao_compareceu">No-show</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
+          <button class="btn" onclick="exportarPlanilha('csv')"><i class="ti ti-file-text"></i> CSV</button>
+          <button class="btn primary" onclick="exportarPlanilha('xlsx')"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+        </div>
+      </div>
+
+      <div class="sheet-summary">
+        <div class="sheet-summary-card">
+          <div class="kicker">Total</div>
+          <div class="value" id="sheet-total">0</div>
+          <div class="sub">reservas cadastradas</div>
+        </div>
+        <div class="sheet-summary-card">
+          <div class="kicker">Valor total</div>
+          <div class="value" id="sheet-valor">R$ 0,00</div>
+          <div class="sub">soma das reservas</div>
+        </div>
+        <div class="sheet-summary-card">
+          <div class="kicker">Compareceram</div>
+          <div class="value" id="sheet-vendas">0</div>
+          <div class="sub" id="sheet-vendas-valor">R$ 0,00 recebidos</div>
+        </div>
+        <div class="sheet-summary-card">
+          <div class="kicker">No-show</div>
+          <div class="value" id="sheet-noshow">0</div>
+          <div class="sub" id="sheet-noshow-valor">R$ 0,00 recebidos</div>
+        </div>
+      </div>
+
+      <div class="sheet-table-wrap">
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>Nome da reserva</th>
+              <th>Nome do pagante</th>
+              <th class="center">Q. pessoas</th>
+              <th>Data da reserva</th>
+              <th>Data do pagamento</th>
+              <th class="right">Valor</th>
+              <th class="center">Anexo</th>
+              <th>Status</th>
+              <th>Pagamento</th>
+              <th>Local</th>
+              <th>Motivo</th>
+              <th>OBS</th>
+              <th class="center">Ajustes</th>
+            </tr>
+          </thead>
+          <tbody id="sheet-body">
+            <tr><td colspan="16"><div class="sheet-empty">Nenhuma reserva cadastrada ainda.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen active" id="screen-lista">
+    <div class="dashboard-panel">
+      <div class="dashboard-head">
+        <div>
+          <div class="dashboard-title">Agenda — Salão Kuro &amp; Balcão Shiro</div>
+          <div class="section-hint">Visão do dia com status, pagamento, presença e valor por reserva.</div>
+        </div>
+        <span class="tag" id="agenda-count">0 reservas</span>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat">
+          <div class="stat-label">Cobertos hoje</div>
+          <div class="stat-val" id="stat-total">0</div>
+          <div class="stat-sub">pessoas agendadas</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Reservas confirmadas</div>
+          <div class="stat-val accent" id="stat-conf">0</div>
+          <div class="stat-sub" id="stat-conf-valor">R$ 0,00 recebidos</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">No-show</div>
+          <div class="stat-val" id="stat-noshow">0</div>
+          <div class="stat-sub" id="stat-noshow-valor">R$ 0,00 recebidos</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Receita confirmada</div>
+          <div class="stat-val" id="stat-valor">R$ 0,00</div>
+          <div class="stat-sub">confirmações + no-show</div>
+        </div>
+      </div>
+
+      <div class="agenda-table-wrap">
+        <table class="agenda-table">
+          <thead>
+            <tr>
+              <th>Horário</th>
+              <th>Cliente</th>
+              <th>Pessoas</th>
+              <th>Local</th>
+              <th>Status</th>
+              <th>Pagamento</th>
+              <th class="right">Valor</th>
+              <th class="center">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="agenda-body">
+            <tr><td colspan="8"><div class="agenda-empty">Nenhuma reserva cadastrada ainda.</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-nova">
+    <div class="editor-layout">
+      <section class="editor-main">
+        <div class="editor-head">
+          <div class="editor-head-copy">
+            <div class="editor-kicker">Mesa de reservas</div>
+            <div class="editor-title">Cadastro e edição de reserva</div>
+            <div class="section-hint">Mesma linguagem do painel principal, com leitura operacional rápida.</div>
+          </div>
+          <span class="tag" id="editor-mode-tag">Novo registro</span>
+        </div>
+
+        <div class="editor-form">
+          <div class="editor-section">
+            <div class="editor-section-title">Identificação</div>
+            <div class="row">
+              <div>
+                <label>Nome do pagante *</label>
+                <input type="text" id="f-pagante" placeholder="Ex: João Silva">
+              </div>
+              <div>
+                <label>Nome da reserva *</label>
+                <input type="text" id="f-reserva" placeholder="Ex: Aniversário da Maria">
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <div class="editor-section-title">Agenda e financeiro</div>
+            <div class="row row-3">
+              <div>
+                <label>Data da reserva *</label>
+                <input type="date" id="f-data-reserva">
+              </div>
+              <div>
+                <label>Horário da reserva</label>
+                <input type="time" id="f-horario">
+              </div>
+              <div>
+                <label>Data do pagamento *</label>
+                <input type="date" id="f-data-pagamento">
+              </div>
+            </div>
+            <div class="row row-3">
+              <div>
+                <label>Valor pago (R$) *</label>
+                <input type="number" id="f-valor" placeholder="0,00" min="0" step="0.01">
+              </div>
+              <div>
+                <label>Quantidade de pessoas *</label>
+                <input type="number" id="f-pessoas" placeholder="Ex: 10" min="1">
+              </div>
+              <div>
+                <label>Local da reserva</label>
+                <select id="f-local">
+                  <option value="kuro">Kuro</option>
+                  <option value="shiro">Shiro</option>
+                  <option value="ambos">Os dois</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <div class="editor-section-title">Contexto de atendimento</div>
+            <div class="row row-3">
+              <div>
+                <label>Motivo</label>
+                <input type="text" id="f-motivo" placeholder="Ex: Aniversário">
+              </div>
+              <div></div>
+              <div></div>
+            </div>
+
+            <label>Observações</label>
+            <textarea id="f-obs" placeholder="Detalhes adicionais"></textarea>
+            <div class="field-note">Use este campo para restrições de mesa, celebrações, alergias ou observações da equipe. Status de presença, no-show e cancelamento ficam para a operação depois do cadastro.</div>
+          </div>
+
+          <div class="editor-section">
+            <div class="editor-section-title">Comprovante</div>
+            <label>Comprovante de pagamento</label>
+            <p class="section-hint">Opcional — JPEG, PNG ou PDF</p>
+            <div class="comprovante-box" onclick="document.getElementById('f-comprovante').click()" id="comp-box">
+              <i class="ti ti-cloud-upload"></i>
+              <p>Clique para enviar foto do comprovante</p>
+            </div>
+            <input type="file" id="f-comprovante" accept="image/*" style="display:none" onchange="previewComp(this)">
+            <img id="comp-preview" class="comprovante-preview" style="display:none" alt="Pré-visualização do comprovante">
+          </div>
+
+          <div class="actions">
+            <button class="btn" id="cancel-edit-btn" onclick="cancelarEdicao()" style="display:none;">Cancelar edição</button>
+            <button class="btn" onclick="cancelarFormulario()">Cancelar</button>
+            <button class="btn primary" onclick="salvarReserva()" id="save-reserva-btn">
+              <i class="ti ti-device-floppy"></i> Salvar reserva
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="editor-aside">
+        <div class="aside-block">
+          <div class="aside-label">Leitura rápida</div>
+          <div class="aside-reserva" id="draft-reserva">Nova reserva</div>
+          <div class="aside-pagante" id="draft-pagante">Pagante ainda não informado</div>
+        </div>
+
+        <div class="aside-block">
+          <div class="aside-label">Resumo operacional</div>
+          <div class="aside-grid">
+            <div class="aside-metric">
+              <div class="metric-kicker">Data</div>
+              <div class="metric-value" id="draft-data">--/--</div>
+              <div class="metric-sub" id="draft-horario">Horário em aberto</div>
+            </div>
+            <div class="aside-metric">
+              <div class="metric-kicker">Financeiro</div>
+              <div class="metric-value" id="draft-valor">R$ 0,00</div>
+              <div class="metric-sub" id="draft-pessoas">0 pessoas</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="aside-block">
+          <div class="aside-label">Status</div>
+          <div class="aside-pills">
+            <span class="status-chip pending" id="draft-presenca-chip">Presença pendente</span>
+            <span class="status-chip open" id="draft-pagamento-chip">Pagamento em aberto</span>
+            <span class="status-chip pending" id="draft-local-chip">Sem local definido</span>
+          </div>
+        </div>
+
+        <div class="aside-block">
+          <div class="aside-label">Nota de operação</div>
+          <div class="aside-list">
+            <div id="draft-motivo">Motivo não informado.</div>
+            <div id="draft-obs">Sem observações adicionais.</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-presenca">
+    <div class="presence-board">
+      <div class="presence-head">
+        <div class="presence-head-copy">
+          <div class="presence-kicker">Operação de sala</div>
+          <div class="presence-title">Confirmação de presença</div>
+          <div class="section-hint">Atualize comparecimento e no-show no mesmo padrão do dashboard.</div>
+        </div>
+        <span class="tag">Equipe de atendimento</span>
+      </div>
+      <div class="presence-body" style="padding-bottom:0;">
+        <div class="presence-filters">
+          <input type="date" id="presenca-date-filter" onchange="renderPresenca()">
+        </div>
+      </div>
+      <div class="presence-body" id="lista-presenca">
+        <div class="presence-empty"><i class="ti ti-users"></i>Nenhuma reserva cadastrada ainda.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-alterar">
+    <div class="shift-board">
+      <div class="shift-head">
+        <div class="shift-head-copy">
+          <div class="shift-kicker">Reacomodação</div>
+          <div class="shift-title">Alterar data da reserva</div>
+          <div class="section-hint">Reagende mantendo a mesma lógica de leitura do restante do painel.</div>
+        </div>
+        <span class="tag">Ajuste pontual</span>
+      </div>
+      <div class="shift-body">
+        <label>Selecionar reserva</label>
+        <select id="alt-select" onchange="preencherDataAtual()">
+          <option value="">-- Selecione uma reserva --</option>
+        </select>
+
+        <div id="alt-form" style="display:none; margin-top:1rem;">
+          <div class="row">
+            <div>
+              <label>Data atual</label>
+              <input type="text" id="alt-data-atual" disabled>
+            </div>
+            <div>
+              <label>Nova data *</label>
+              <input type="date" id="alt-nova-data">
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" onclick="alterarData()">
+              <i class="ti ti-calendar-check"></i> Confirmar alteração
+            </button>
+          </div>
+        </div>
+
+        <div id="alt-empty" class="shift-empty">
+          Selecione uma reserva para alterar a data.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-img" id="modal-img" style="display:none" onclick="fecharModal()">
+  <button class="modal-img-close" onclick="fecharModal()"><i class="ti ti-x"></i></button>
+  <img id="modal-img-src" src="" alt="Comprovante">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="./config/supabase-config.js"></script>
+<script>
+  const SUPABASE_URL = window.SUPABASE_CONFIG?.url || '';
+  const SUPABASE_KEY = window.SUPABASE_CONFIG?.publishableKey || '';
+  const supabaseReady = (!SUPABASE_URL || !SUPABASE_KEY)
+    ? Promise.resolve(null)
+    : import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')
+      .then(({ createClient }) => createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      }))
+      .then(client => {
+        window.kuroSupabase = client;
+        return client;
+      });
+
+  let reservas = [];
+  let compBase64 = null;
+  let editingReservaId = null;
+  let syncQueue = Promise.resolve();
+  let currentSession = null;
+  let currentPermissions = new Set();
+  let appBooted = false;
+
+  function salvar() {
+    localStorage.setItem('reservas', JSON.stringify(reservas));
+    syncQueue = syncQueue
+      .then(() => sincronizarBanco())
+      .catch(error => console.error('Erro ao sincronizar Supabase:', error));
+    return syncQueue;
+  }
+
+  async function getSupabaseClient() {
+    return supabaseReady;
+  }
+
+  function updateAuthStatus(message) {
+    const el = document.getElementById('auth-status-box');
+    if (el) el.textContent = message;
+  }
+
+  function renderPermissionPreview() {
+    const host = document.getElementById('auth-permissions-preview');
+    if (!host) return;
+    const items = Array.from(currentPermissions);
+    if (!items.length) {
+      host.innerHTML = '<span class="perm-chip">Sem permissões carregadas</span>';
+      return;
+    }
+    host.innerHTML = items.map(item => `<span class="perm-chip">${escHtml(item)}</span>`).join('');
+  }
+
+  function hasPermission(permission) {
+    return currentPermissions.has(permission);
+  }
+
+  function hasAnyPermission(list) {
+    return list.some(permission => currentPermissions.has(permission));
+  }
+
+  function requirePermission(permission, message) {
+    if (hasPermission(permission)) return true;
+    toast(message || 'Sem permissão para executar esta ação.', 'danger');
+    return false;
+  }
+
+  function setHidden(id, hidden) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = hidden ? 'none' : '';
+  }
+
+  function updatePermissionUI() {
+    const canRead = hasPermission('reservas.read');
+    const canCreate = hasPermission('reservas.create');
+    const canUpdate = hasPermission('reservas.update');
+    const canPresence = hasAnyPermission(['reservas.read', 'reservas.checkin', 'reservas.no_show']);
+
+    setHidden('nav-lista', !canRead);
+    setHidden('nav-planilha', !canRead);
+    setHidden('nav-nova', !canCreate);
+    setHidden('nav-presenca', !canPresence);
+    setHidden('nav-alterar', !canUpdate);
+    setHidden('topbar-planilha-btn', !canRead);
+    setHidden('topbar-nova-btn', !canCreate);
+    setHidden('auth-logout-btn', !currentSession);
+
+    const badge = document.getElementById('auth-user-badge');
+    if (badge) {
+      badge.textContent = currentSession?.user?.email || 'Sessão indisponível';
+      badge.title = currentSession?.user?.id || '';
+    }
+  }
+
+  async function loadPermissions() {
+    const supabase = await getSupabaseClient();
+    currentPermissions = new Set();
+    if (!supabase || !currentSession) {
+      renderPermissionPreview();
+      updatePermissionUI();
+      return;
+    }
+
+    const { data, error } = await supabase.rpc('my_permissions');
+    if (error) {
+      updateAuthStatus('Sessão válida, mas o controle de permissões não respondeu.\nAplique db/schema-auth.sql no Supabase para liberar o RBAC.');
+      renderPermissionPreview();
+      updatePermissionUI();
+      return;
+    }
+
+    currentPermissions = new Set((data || []).map(item => item.permission_key));
+    renderPermissionPreview();
+    updatePermissionUI();
+  }
+
+  function lockApp() {
+    document.body.classList.add('auth-locked');
+  }
+
+  function unlockApp() {
+    document.body.classList.remove('auth-locked');
+  }
+
+  async function bootApp() {
+    if (appBooted) return;
+    appBooted = true;
+    montarIdentidadeKuroShiro();
+    conectarPreviewFormulario();
+    try {
+      await carregarReservasBanco();
+    } catch (error) {
+      console.error('Falha ao carregar Supabase, usando cache local.', error);
+      reservas = JSON.parse(localStorage.getItem('reservas') || '[]').map(normalizarReserva);
+    }
+    renderLista();
+    renderPlanilha();
+    renderPresenca();
+    renderAlterar();
+  }
+
+  async function carregarSessaoAtual() {
+    const supabase = await getSupabaseClient();
+    if (!supabase) {
+      lockApp();
+      updateAuthStatus('Configuração ausente.\nEdite config/supabase-config.js com URL e publishable key do Supabase.');
+      return;
+    }
+
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      lockApp();
+      updateAuthStatus('Erro ao validar sessão: ' + error.message);
+      return;
+    }
+
+    currentSession = data.session;
+    await loadPermissions();
+
+    if (!currentSession) {
+      lockApp();
+      updateAuthStatus('Faça login para acessar o painel.');
+      return;
+    }
+
+    if (!hasPermission('reservas.read')) {
+      lockApp();
+      updateAuthStatus(`Login realizado para ${currentSession.user.email}.\nEste usuário não possui a permissão reservas.read.`);
+      return;
+    }
+
+    unlockApp();
+    updateAuthStatus(`Login realizado para ${currentSession.user.email}.`);
+    await bootApp();
+  }
+
+  async function loginApp() {
+    const supabase = await getSupabaseClient();
+    if (!supabase) {
+      updateAuthStatus('Configuração do Supabase ausente.');
+      return;
+    }
+
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) {
+      updateAuthStatus('Informe email e senha.');
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      updateAuthStatus('Falha no login: ' + error.message);
+      return;
+    }
+
+    await carregarSessaoAtual();
+  }
+
+  async function logoutApp() {
+    const supabase = await getSupabaseClient();
+    if (supabase) await supabase.auth.signOut();
+    currentSession = null;
+    currentPermissions = new Set();
+    renderPermissionPreview();
+    updatePermissionUI();
+    lockApp();
+    updateAuthStatus('Sessão encerrada.');
+  }
+
+  function normalizarReserva(item = {}) {
+    const cancelada = item.cancelada === true || item.presenca === 'cancelada';
+    const presenca = item.presenca || (cancelada ? 'cancelada' : item.presencaConfirmada ? 'compareceu' : 'pendente');
+    return {
+      id: String(item.id ?? crypto.randomUUID()),
+      pagante: item.pagante || '',
+      reserva: item.reserva || '',
+      dataReserva: item.data_reserva || item.dataReserva || '',
+      horario: item.horario || item.horario_reserva || item.horarioReserva || '',
+      dataPagamento: item.data_pagamento || item.dataPagamento || '',
+      valor: Number(item.valor || 0),
+      pessoas: Number(item.pessoas || 1),
+      motivo: item.motivo || '',
+      localReserva: item.local_reserva || item.localReserva || 'ambos',
+      cancelada,
+      presencaConfirmada: typeof item.presenca_confirmada === 'boolean' ? item.presenca_confirmada : !!item.presencaConfirmada,
+      vendaRealizada: typeof item.venda_realizada === 'boolean' ? item.venda_realizada : !!item.vendaRealizada,
+      comprovante: item.comprovante || null,
+      obs: item.obs || '',
+      presenca,
+      created_at: item.created_at || null,
+      updated_at: item.updated_at || null
+    };
+  }
+
+  function paraBanco(item) {
+    const cancelada = item.cancelada === true || item.presenca === 'cancelada';
+    const presenca = cancelada ? 'cancelada' : (item.presenca === 'compareceu' || item.presencaConfirmada ? 'compareceu' : item.presenca === 'nao_compareceu' ? 'nao_compareceu' : 'pendente');
+    return {
+      id: String(item.id),
+      pagante: item.pagante || '',
+      reserva: item.reserva || '',
+      data_reserva: item.dataReserva || null,
+      horario: item.horario || null,
+      data_pagamento: item.dataPagamento || null,
+      valor: Number(item.valor || 0),
+      pessoas: Number(item.pessoas || 1),
+      motivo: item.motivo || null,
+      local_reserva: item.localReserva || 'ambos',
+      presenca,
+      presenca_confirmada: !cancelada && !!item.presencaConfirmada,
+      venda_realizada: !cancelada && !!item.vendaRealizada,
+      cancelada,
+      comprovante: item.comprovante || null,
+      obs: item.obs || null,
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  async function sincronizarBanco() {
+    const supabase = await getSupabaseClient();
+    const payload = reservas.map(paraBanco);
+    const { error: upsertError } = await supabase.from('reservas').upsert(payload, { onConflict: 'id' });
+    if (upsertError) throw upsertError;
+  }
+
+  async function carregarReservasBanco() {
+    const supabase = await getSupabaseClient();
+    const { data, error } = await supabase.from('reservas').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+
+    if (!data || !data.length) {
+      const cacheLocal = JSON.parse(localStorage.getItem('reservas') || '[]').map(normalizarReserva);
+      if (cacheLocal.length) {
+        reservas = cacheLocal;
+        await sincronizarBanco();
+        return;
+      }
+      reservas = [];
+      return;
+    }
+
+    reservas = data.map(normalizarReserva);
+    localStorage.setItem('reservas', JSON.stringify(reservas));
+  }
+
+  function fmtDate(valor) {
+    if (!valor) return '-';
+    const partes = valor.split('-');
+    if (partes.length !== 3) return valor;
+    return partes[2] + '/' + partes[1] + '/' + partes[0];
+  }
+
+  function fmtTime(valor) {
+    if (!valor) return '--';
+    const [hours, minutes] = String(valor).split(':');
+    if (!hours || !minutes) return String(valor);
+    return hours.padStart(2, '0') + ':' + minutes.padStart(2, '0');
+  }
+
+  function fmtValor(valor) {
+    return 'R$ ' + Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  }
+
+  function escHtml(valor) {
+    return String(valor ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function getPresencaEstado(item) {
+    if (isCancelada(item)) return 'cancelada';
+    if (item.presenca === 'compareceu' || item.presenca === 'confirmado') return 'compareceu';
+    if (item.presenca === 'nao_compareceu' || item.presenca === 'ausente') return 'nao_compareceu';
+    return 'pendente';
+  }
+
+  function isCancelada(item) {
+    return item.cancelada === true || item.presenca === 'cancelada';
+  }
+
+  function isPresencaConfirmada(item) {
+    if (isCancelada(item)) return false;
+    if (typeof item.presencaConfirmada === 'boolean') return item.presencaConfirmada;
+    if (typeof item.vendaRealizada === 'boolean') return item.vendaRealizada;
+    return getPresencaEstado(item) === 'compareceu';
+  }
+
+  function getLocalLabel(item) {
+    const local = item.localReserva || 'ambos';
+    if (local === 'kuro') return 'Kuro';
+    if (local === 'shiro') return 'Shiro';
+    return 'Os dois';
+  }
+
+  function getLocalAgendaLabel(item) {
+    const local = item.localReserva || 'ambos';
+    if (local === 'kuro') return 'Salão Kuro';
+    if (local === 'shiro') return 'Balcão Shiro';
+    return 'Salão Kuro & Balcão Shiro';
+  }
+
+  function getPagamentoLabel(item) {
+    if (isCancelada(item)) return { label: 'Reembolsado', className: 'reembolsado' };
+    if (getPresencaEstado(item) === 'pendente') return { label: 'Em aberto', className: 'aberto' };
+    return { label: 'Pago', className: 'pago' };
+  }
+
+  function getStatusVisual(item) {
+    const status = getPresencaEstado(item);
+    if (status === 'compareceu') return { className: 'confirmada', mark: '確', label: 'Confirmada' };
+    if (status === 'nao_compareceu') return { className: 'pendente', mark: '待', label: 'No-show' };
+    if (status === 'cancelada') return { className: 'cancelada', mark: '×', label: 'Cancelada' };
+    return { className: 'pendente', mark: '待', label: 'Pendente' };
+  }
+
+  function jsStr(valor) {
+    return JSON.stringify(String(valor ?? ''));
+  }
+
+  function showScreen(nome) {
+    if (nome === 'lista' && !hasPermission('reservas.read')) return toast('Sem permissão para ver reservas.', 'danger');
+    if (nome === 'planilha' && !hasPermission('reservas.read')) return toast('Sem permissão para ver a planilha.', 'danger');
+    if (nome === 'presenca' && !hasAnyPermission(['reservas.read', 'reservas.checkin', 'reservas.no_show'])) return toast('Sem permissão para ver presenças.', 'danger');
+    if (nome === 'alterar' && !hasPermission('reservas.update')) return toast('Sem permissão para alterar datas.', 'danger');
+    if (nome === 'nova' && !hasAnyPermission(['reservas.create', 'reservas.update'])) return toast('Sem permissão para acessar o formulário de reserva.', 'danger');
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+    const screen = document.getElementById('screen-' + nome);
+    if (screen) screen.classList.add('active');
+    const navBtn = document.getElementById('nav-' + nome);
+    if (navBtn) navBtn.classList.add('active');
+    if (nome === 'lista') renderLista();
+    if (nome === 'planilha') renderPlanilha();
+    if (nome === 'presenca') renderPresenca();
+    if (nome === 'alterar') renderAlterar();
+  }
+
+  function abrirNovaReserva() {
+    if (!requirePermission('reservas.create', 'Seu usuário não pode criar reservas.')) return;
+    limparForm();
+    showScreen('nova');
+  }
+
+  function renderDraftReserva() {
+    const reserva = document.getElementById('f-reserva')?.value.trim() || 'Nova reserva';
+    const pagante = document.getElementById('f-pagante')?.value.trim() || 'Pagante ainda não informado';
+    const dataReserva = document.getElementById('f-data-reserva')?.value || '';
+    const horario = document.getElementById('f-horario')?.value || '';
+    const valor = Number(document.getElementById('f-valor')?.value || 0);
+    const pessoas = Number(document.getElementById('f-pessoas')?.value || 0);
+    const motivo = document.getElementById('f-motivo')?.value.trim() || '';
+    const local = document.getElementById('f-local')?.value || 'ambos';
+    const obs = document.getElementById('f-obs')?.value.trim() || '';
+    const dataPagamento = document.getElementById('f-data-pagamento')?.value || '';
+
+    const localTexto = local === 'kuro' ? 'Salão Kuro' : local === 'shiro' ? 'Balcão Shiro' : 'Salão Kuro & Balcão Shiro';
+    const pagamentoTexto = dataPagamento ? 'Pagamento registrado' : 'Pagamento em aberto';
+    const pagamentoClasse = dataPagamento ? 'paid' : 'open';
+
+    document.getElementById('draft-reserva').textContent = reserva;
+    document.getElementById('draft-pagante').textContent = pagante;
+    document.getElementById('draft-data').textContent = dataReserva ? fmtDate(dataReserva) : '--/--';
+    document.getElementById('draft-horario').textContent = horario ? fmtTime(horario) : 'Horário em aberto';
+    document.getElementById('draft-valor').textContent = fmtValor(valor);
+    document.getElementById('draft-pessoas').textContent = `${pessoas || 0} pessoa${pessoas === 1 ? '' : 's'}`;
+
+    const presencaChip = document.getElementById('draft-presenca-chip');
+    presencaChip.className = 'status-chip pending';
+    presencaChip.textContent = 'Status definido depois';
+
+    const pagamentoChip = document.getElementById('draft-pagamento-chip');
+    pagamentoChip.className = `status-chip ${pagamentoClasse}`;
+    pagamentoChip.textContent = pagamentoTexto;
+
+    const localChip = document.getElementById('draft-local-chip');
+    localChip.className = 'status-chip pending';
+    localChip.textContent = localTexto;
+
+    document.getElementById('draft-motivo').textContent = motivo ? `Motivo: ${motivo}` : 'Motivo não informado.';
+    document.getElementById('draft-obs').textContent = obs ? `Observações: ${obs}` : 'Sem observações adicionais.';
+    document.getElementById('editor-mode-tag').textContent = editingReservaId ? 'Edição em andamento' : 'Novo registro';
+  }
+
+  function conectarPreviewFormulario() {
+    ['f-pagante', 'f-reserva', 'f-data-reserva', 'f-horario', 'f-data-pagamento', 'f-valor', 'f-pessoas', 'f-motivo', 'f-local', 'f-obs']
+      .forEach(id => {
+        const campo = document.getElementById(id);
+        if (campo) {
+          campo.addEventListener('input', renderDraftReserva);
+          campo.addEventListener('change', renderDraftReserva);
+        }
+      });
+    renderDraftReserva();
+  }
+
+  function previewComp(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      compBase64 = e.target.result;
+      const preview = document.getElementById('comp-preview');
+      preview.src = compBase64;
+      preview.style.display = 'block';
+      document.getElementById('comp-box').style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function limparForm() {
+    ['f-pagante', 'f-reserva', 'f-horario', 'f-valor', 'f-pessoas', 'f-motivo', 'f-obs'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-data-reserva').value = '';
+    document.getElementById('f-data-pagamento').value = '';
+    document.getElementById('f-local').value = 'ambos';
+    document.getElementById('f-comprovante').value = '';
+    document.getElementById('comp-preview').style.display = 'none';
+    document.getElementById('comp-box').style.display = 'block';
+    compBase64 = null;
+    editingReservaId = null;
+    const saveBtn = document.getElementById('save-reserva-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    if (saveBtn) saveBtn.innerHTML = '<i class="ti ti-device-floppy"></i> Salvar reserva';
+    if (cancelEditBtn) cancelEditBtn.style.display = 'none';
+    renderDraftReserva();
+  }
+
+  function preencherFormulario(item) {
+    document.getElementById('f-pagante').value = item.pagante || '';
+    document.getElementById('f-reserva').value = item.reserva || '';
+    document.getElementById('f-data-reserva').value = item.dataReserva || '';
+    document.getElementById('f-horario').value = item.horario || '';
+    document.getElementById('f-data-pagamento').value = item.dataPagamento || '';
+    document.getElementById('f-valor').value = item.valor ?? '';
+    document.getElementById('f-pessoas').value = item.pessoas ?? '';
+    document.getElementById('f-motivo').value = item.motivo || '';
+    document.getElementById('f-local').value = item.localReserva || 'ambos';
+    document.getElementById('f-obs').value = item.obs || '';
+    compBase64 = item.comprovante || null;
+
+    const preview = document.getElementById('comp-preview');
+    const box = document.getElementById('comp-box');
+    if (compBase64) {
+      preview.src = compBase64;
+      preview.style.display = 'block';
+      box.style.display = 'none';
+    } else {
+      preview.style.display = 'none';
+      box.style.display = 'block';
+    }
+
+    editingReservaId = item.id;
+    const saveBtn = document.getElementById('save-reserva-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    if (saveBtn) saveBtn.innerHTML = '<i class="ti ti-device-floppy"></i> Atualizar reserva';
+    if (cancelEditBtn) cancelEditBtn.style.display = 'inline-flex';
+    renderDraftReserva();
+  }
+
+  function editarReserva(id) {
+    if (!requirePermission('reservas.update', 'Seu usuário não pode editar reservas.')) return;
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item) return;
+    preencherFormulario(item);
+    showScreen('nova');
+  }
+
+  function cancelarEdicao() {
+    limparForm();
+    showScreen('lista');
+  }
+
+  function cancelarFormulario() {
+    limparForm();
+    showScreen('lista');
+  }
+
+  function salvarReserva() {
+    const pagante = document.getElementById('f-pagante').value.trim();
+    const reserva = document.getElementById('f-reserva').value.trim();
+    const dataReserva = document.getElementById('f-data-reserva').value;
+    const horario = document.getElementById('f-horario').value;
+    const dataPagamento = document.getElementById('f-data-pagamento').value;
+    const valor = parseFloat(document.getElementById('f-valor').value);
+    const pessoas = Number(document.getElementById('f-pessoas').value);
+    const motivo = document.getElementById('f-motivo').value.trim();
+    const localReserva = document.getElementById('f-local').value;
+    const obs = document.getElementById('f-obs').value.trim();
+
+    if (!pagante || !reserva || !dataReserva || !dataPagamento || isNaN(valor) || isNaN(pessoas)) {
+      toast('Preencha todos os campos obrigatórios (*).', 'danger');
+      return;
+    }
+
+    if (editingReservaId) {
+      if (!requirePermission('reservas.update', 'Seu usuário não pode atualizar reservas.')) return;
+      const item = reservas.find(reserva => reserva.id === editingReservaId);
+      if (!item) return;
+      item.pagante = pagante;
+      item.reserva = reserva;
+      item.dataReserva = dataReserva;
+      item.horario = horario;
+      item.dataPagamento = dataPagamento;
+      item.valor = valor;
+      item.pessoas = pessoas;
+      item.motivo = motivo;
+      item.localReserva = localReserva;
+      item.obs = obs;
+      item.comprovante = compBase64;
+      toast('Reserva atualizada com sucesso!');
+    } else {
+      if (!requirePermission('reservas.create', 'Seu usuário não pode criar reservas.')) return;
+      reservas.push({
+        id: crypto.randomUUID(),
+        pagante,
+        reserva,
+        dataReserva,
+        horario,
+        dataPagamento,
+        valor,
+        pessoas,
+        motivo,
+        localReserva,
+        obs,
+        cancelada: false,
+        presencaConfirmada: false,
+        vendaRealizada: false,
+        comprovante: compBase64,
+        presenca: 'pendente'
+      });
+      toast('Reserva salva com sucesso!');
+    }
+
+    salvar();
+    limparForm();
+    renderLista();
+    renderPlanilha();
+    renderPresenca();
+    renderAlterar();
+    showScreen('lista');
+  }
+
+  function renderLista() {
+    const el = document.getElementById('agenda-body');
+    if (!el) return;
+
+    const agenda = [...reservas].sort((a, b) => {
+      const dataA = `${a.dataReserva || ''} ${a.horario || ''}`;
+      const dataB = `${b.dataReserva || ''} ${b.horario || ''}`;
+      return dataA.localeCompare(dataB);
+    });
+
+    document.getElementById('agenda-count').textContent = `${agenda.length} reserva${agenda.length === 1 ? '' : 's'}`;
+    const cobertos = agenda.filter(item => !isCancelada(item)).reduce((soma, item) => soma + Number(item.pessoas || 0), 0);
+    const confirmadas = agenda.filter(item => getPresencaEstado(item) === 'compareceu');
+    const noshow = agenda.filter(item => getPresencaEstado(item) === 'nao_compareceu');
+    const totalRecebido = confirmadas.reduce((soma, item) => soma + Number(item.valor || 0), 0) + noshow.reduce((soma, item) => soma + Number(item.valor || 0), 0);
+    const valorConfirmadas = confirmadas.reduce((soma, item) => soma + Number(item.valor || 0), 0);
+    const valorNoshow = noshow.reduce((soma, item) => soma + Number(item.valor || 0), 0);
+    document.getElementById('stat-total').textContent = cobertos;
+    document.getElementById('stat-valor').textContent = fmtValor(totalRecebido);
+    document.getElementById('stat-conf').textContent = confirmadas.length;
+    document.getElementById('stat-conf-valor').textContent = fmtValor(valorConfirmadas) + ' recebidos';
+    document.getElementById('stat-noshow').textContent = noshow.length;
+    document.getElementById('stat-noshow-valor').textContent = fmtValor(valorNoshow) + ' recebidos';
+
+    if (!agenda.length) {
+      el.innerHTML = '<tr><td colspan="8"><div class="agenda-empty">Nenhuma reserva cadastrada ainda.</div></td></tr>';
+      return;
+    }
+
+    el.innerHTML = agenda.map(item => {
+      const status = getStatusVisual(item);
+      const pagamento = getPagamentoLabel(item);
+      const canUpdate = hasPermission('reservas.update');
+      const canCheckin = hasPermission('reservas.checkin');
+      const canNoShow = hasPermission('reservas.no_show');
+      const canCancel = hasPermission('reservas.cancel');
+      return `
+      <tr>
+        <td>${fmtTime(item.horario)}</td>
+        <td>
+          <span class="cliente">${escHtml(item.reserva)}</span>
+          <span class="cliente-sub">${escHtml(item.pagante || '-')}</span>
+        </td>
+        <td class="center">${item.pessoas ?? '-'}</td>
+        <td>${escHtml(getLocalAgendaLabel(item))}</td>
+        <td>
+          <span class="hanko ${status.className}">
+            <span class="hanko-mark">${status.mark}</span>
+            ${status.label}
+          </span>
+        </td>
+        <td><span class="pay-pill ${pagamento.className}">${pagamento.label}</span></td>
+        <td class="right valor">${fmtValor(item.valor)}</td>
+        <td>
+          <div class="actions-cell">
+            ${canUpdate ? `<button class="btn mini-btn" onclick='editarReserva(${jsStr(item.id)})' title="Editar"><i class="ti ti-edit"></i></button>` : ''}
+            ${!isCancelada(item) && canCheckin ? `<button class="btn success-btn mini-btn" onclick='setPresenca(${jsStr(item.id)},"compareceu")' title="Confirmar presença"><i class="ti ti-check"></i></button>` : ''}
+            ${!isCancelada(item) && canNoShow ? `<button class="btn danger mini-btn" onclick='setPresenca(${jsStr(item.id)},"nao_compareceu")' title="Marcar no-show"><i class="ti ti-user-x"></i></button>` : ''}
+            ${canCancel ? (!isCancelada(item) ? `<button class="btn mini-btn" onclick='cancelarReserva(${jsStr(item.id)})' title="Cancelar reserva"><i class="ti ti-ban"></i></button>` : `<button class="btn mini-btn" onclick='reativarReserva(${jsStr(item.id)})' title="Reativar reserva"><i class="ti ti-arrow-back-up"></i></button>`) : ''}
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function getReservasFiltradas() {
+    const termo = (document.getElementById('sheet-search')?.value || '').trim().toLowerCase();
+    const dataDe = document.getElementById('sheet-date-from')?.value || '';
+    const dataAte = document.getElementById('sheet-date-to')?.value || '';
+    const status = document.getElementById('sheet-status')?.value || '';
+    return reservas.filter(item => {
+      const statusItem = getPresencaEstado(item);
+      const matchTexto = !termo || [
+      item.pagante,
+      item.reserva,
+      item.motivo,
+      item.obs,
+      getLocalLabel(item),
+      isCancelada(item) ? 'cancelada' : '',
+      fmtDate(item.dataReserva),
+      fmtDate(item.dataPagamento)
+      ].join(' ').toLowerCase().includes(termo);
+      const matchDataDe = !dataDe || (item.dataReserva && item.dataReserva >= dataDe);
+      const matchDataAte = !dataAte || (item.dataReserva && item.dataReserva <= dataAte);
+      const matchStatus = !status || statusItem === status;
+      return matchTexto && matchDataDe && matchDataAte && matchStatus;
+    });
+  }
+
+  function renderPlanilha() {
+    const el = document.getElementById('sheet-body');
+    if (!el) return;
+
+    const linhas = getReservasFiltradas();
+    const confirmadas = linhas.filter(item => getPresencaEstado(item) === 'compareceu');
+    const noshow = linhas.filter(item => getPresencaEstado(item) === 'nao_compareceu');
+    const totalValor = confirmadas.reduce((soma, item) => soma + Number(item.valor || 0), 0) + noshow.reduce((soma, item) => soma + Number(item.valor || 0), 0);
+    const totalVendas = confirmadas.length;
+    const totalNoShow = noshow.length;
+    const valorVendas = confirmadas.reduce((soma, item) => soma + Number(item.valor || 0), 0);
+    const valorNoShow = noshow.reduce((soma, item) => soma + Number(item.valor || 0), 0);
+
+    document.getElementById('sheet-total').textContent = linhas.length;
+    document.getElementById('sheet-valor').textContent = fmtValor(totalValor);
+    document.getElementById('sheet-vendas').textContent = totalVendas;
+    document.getElementById('sheet-vendas-valor').textContent = fmtValor(valorVendas) + ' recebidos';
+    document.getElementById('sheet-noshow').textContent = totalNoShow;
+    document.getElementById('sheet-noshow-valor').textContent = fmtValor(valorNoShow) + ' recebidos';
+
+    if (!linhas.length) {
+      el.innerHTML = '<tr><td colspan="13"><div class="sheet-empty">Nenhuma reserva encontrada.</div></td></tr>';
+      return;
+    }
+
+    const canUpdate = hasPermission('reservas.update');
+    const canCheckin = hasPermission('reservas.checkin');
+    const canNoShow = hasPermission('reservas.no_show');
+    const canCancel = hasPermission('reservas.cancel');
+    const canDelete = hasPermission('reservas.delete');
+    el.innerHTML = linhas.map(item => `
+      <tr>
+        <td>${escHtml(item.reserva)}</td>
+        <td>${escHtml(item.pagante)}</td>
+        <td class="center">${item.pessoas ?? '-'}</td>
+        <td>${fmtDate(item.dataReserva)}</td>
+        <td>${fmtDate(item.dataPagamento)}</td>
+        <td class="right">${fmtValor(item.valor)}</td>
+        <td class="center">${item.comprovante ? `<button class="btn mini-btn" onclick='verComprovante(${jsStr(item.id)})'>Ver anexo</button>` : '-'}</td>
+        <td>
+          <span class="hanko ${getStatusVisual(item).className}">
+            <span class="hanko-mark">${getStatusVisual(item).mark}</span>
+            ${getStatusVisual(item).label}
+          </span>
+        </td>
+        <td><span class="pay-pill ${getPagamentoLabel(item).className}">${getPagamentoLabel(item).label}</span></td>
+        <td>${escHtml(getLocalLabel(item))}</td>
+        <td class="muted">${escHtml(item.motivo || '-')}</td>
+        <td class="muted" title="${escHtml(item.obs || '')}">${escHtml(item.obs || '-')}</td>
+        <td>
+          <div class="actions-cell">
+            ${canUpdate ? `<button class="btn mini-btn" onclick='editarReserva(${jsStr(item.id)})'><i class="ti ti-edit"></i></button>` : ''}
+            ${!isCancelada(item) && canCheckin ? `<button class="btn success-btn mini-btn" onclick='setPresenca(${jsStr(item.id)},"compareceu")'><i class="ti ti-check"></i></button>` : ''}
+            ${!isCancelada(item) && canNoShow ? `<button class="btn danger mini-btn" onclick='setPresenca(${jsStr(item.id)},"nao_compareceu")'><i class="ti ti-user-x"></i></button>` : ''}
+            ${canCancel ? (!isCancelada(item) ? `<button class="btn mini-btn" onclick='cancelarReserva(${jsStr(item.id)})'><i class="ti ti-ban"></i></button>` : `<button class="btn mini-btn" onclick='reativarReserva(${jsStr(item.id)})'><i class="ti ti-arrow-back-up"></i></button>`) : ''}
+            ${canDelete ? `<button class="btn danger mini-btn" onclick='excluir(${jsStr(item.id)})'><i class="ti ti-trash"></i></button>` : ''}
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderPresenca() {
+    const el = document.getElementById('lista-presenca');
+    const dataFiltro = document.getElementById('presenca-date-filter')?.value || '';
+    const itens = !dataFiltro ? reservas : reservas.filter(item => item.dataReserva === dataFiltro);
+    if (!itens.length) {
+      el.innerHTML = `<div class="presence-empty"><i class="ti ti-users"></i>${dataFiltro ? 'Nenhuma reserva encontrada para a data selecionada.' : 'Nenhuma reserva cadastrada ainda.'}</div>`;
+      return;
+    }
+
+    const canCheckin = hasPermission('reservas.checkin');
+    const canNoShow = hasPermission('reservas.no_show');
+    const canCancel = hasPermission('reservas.cancel');
+    el.innerHTML = itens.map(item => `
+      <div class="presenca-item">
+        <div>
+          <div class="presenca-name">${escHtml(item.reserva)}</div>
+          <div class="presenca-date">${escHtml(item.pagante)} &nbsp; - &nbsp; ${fmtDate(item.dataReserva)} &nbsp; - &nbsp; ${item.pessoas} pessoa${item.pessoas > 1 ? 's' : ''}</div>
+        </div>
+        <div class="presenca-btns">
+          <span class="badge ${getPresencaEstado(item) === 'compareceu' ? 'confirmed' : getPresencaEstado(item) === 'nao_compareceu' ? 'absent' : getPresencaEstado(item) === 'cancelada' ? 'cancelled' : 'pending'}">
+            ${getPresencaEstado(item) === 'compareceu' ? 'Compareceu' : getPresencaEstado(item) === 'nao_compareceu' ? 'No-show' : getPresencaEstado(item) === 'cancelada' ? 'Cancelada' : 'Pendente'}
+          </span>
+          ${!isCancelada(item) && canCheckin ? `<button class="btn success-btn" style="font-size:12px;padding:5px 10px" onclick='setPresenca(${jsStr(item.id)},"compareceu")' title="Confirmar presença"><i class="ti ti-check"></i></button>` : ''}
+          ${!isCancelada(item) && canNoShow ? `<button class="btn danger" style="font-size:12px;padding:5px 10px" onclick='setPresenca(${jsStr(item.id)},"nao_compareceu")' title="Registrar ausência"><i class="ti ti-x"></i></button>` : ''}
+          ${canCancel ? (!isCancelada(item) ? `<button class="btn" style="font-size:12px;padding:5px 10px" onclick='cancelarReserva(${jsStr(item.id)})' title="Cancelar reserva"><i class="ti ti-ban"></i></button>` : `<button class="btn" style="font-size:12px;padding:5px 10px" onclick='reativarReserva(${jsStr(item.id)})' title="Reativar reserva"><i class="ti ti-arrow-back-up"></i></button>`) : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderAlterar() {
+    const sel = document.getElementById('alt-select');
+    sel.innerHTML = '<option value="">-- Selecione uma reserva --</option>' +
+      reservas.map(item => `<option value="${escHtml(item.id)}">${escHtml(item.reserva)} (${fmtDate(item.dataReserva)})</option>`).join('');
+    document.getElementById('alt-form').style.display = 'none';
+    document.getElementById('alt-empty').style.display = 'block';
+  }
+
+  function preencherDataAtual() {
+    const id = document.getElementById('alt-select').value;
+    if (!id) {
+      document.getElementById('alt-form').style.display = 'none';
+      document.getElementById('alt-empty').style.display = 'block';
+      return;
+    }
+
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item) return;
+    document.getElementById('alt-data-atual').value = fmtDate(item.dataReserva);
+    document.getElementById('alt-nova-data').value = item.dataReserva;
+    document.getElementById('alt-form').style.display = 'block';
+    document.getElementById('alt-empty').style.display = 'none';
+  }
+
+  function alterarData() {
+    if (!requirePermission('reservas.update', 'Seu usuário não pode alterar a data da reserva.')) return;
+    const id = document.getElementById('alt-select').value;
+    const novaData = document.getElementById('alt-nova-data').value;
+    if (!novaData) {
+      toast('Informe a nova data.', 'danger');
+      return;
+    }
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item) return;
+    item.dataReserva = novaData;
+    salvar();
+    renderLista();
+    renderPlanilha();
+    renderAlterar();
+    toast('Data alterada para ' + fmtDate(novaData) + '!');
+  }
+
+  function setPresenca(id, status) {
+    const permission = status === 'compareceu' ? 'reservas.checkin' : 'reservas.no_show';
+    if (!requirePermission(permission, 'Seu usuário não pode alterar este status de presença.')) return;
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item) return;
+    item.cancelada = false;
+    item.presenca = status;
+    item.presencaConfirmada = status === 'compareceu';
+    item.vendaRealizada = item.presencaConfirmada;
+    salvar();
+    renderLista();
+    renderPlanilha();
+    renderPresenca();
+    toast(status === 'compareceu' ? 'Presença confirmada!' : 'Ausência registrada.');
+  }
+
+  function togglePresencaConfirmada(id, checked) {
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item) return;
+    item.cancelada = false;
+    item.presencaConfirmada = checked;
+    item.vendaRealizada = checked;
+    item.presenca = checked ? 'compareceu' : 'pendente';
+    salvar();
+    renderLista();
+    renderPlanilha();
+    renderPresenca();
+  }
+
+  function reativarReserva(id) {
+    if (!requirePermission('reservas.cancel', 'Seu usuário não pode reativar reservas.')) return;
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item) return;
+    item.cancelada = false;
+    item.presenca = 'pendente';
+    item.presencaConfirmada = false;
+    item.vendaRealizada = false;
+    salvar();
+    renderLista();
+    renderPlanilha();
+    renderPresenca();
+    renderAlterar();
+    toast('Reserva reativada.');
+  }
+
+  function excluir(id) {
+    if (!requirePermission('reservas.delete', 'Seu usuário não pode excluir reservas.')) return;
+    if (!confirm('Excluir esta reserva?')) return;
+    reservas = reservas.filter(item => item.id !== id);
+    salvar();
+    renderLista();
+    renderPlanilha();
+    renderPresenca();
+    renderAlterar();
+    toast('Reserva excluÃ­da.');
+  }
+
+  function cancelarReserva(id) {
+    if (!requirePermission('reservas.cancel', 'Seu usuário não pode cancelar reservas.')) return;
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item) return;
+    item.cancelada = true;
+    item.presenca = 'cancelada';
+    item.presencaConfirmada = false;
+    item.vendaRealizada = false;
+    salvar();
+    renderLista();
+    renderPlanilha();
+    renderPresenca();
+    renderAlterar();
+    toast('Reserva marcada como cancelada.');
+  }
+
+  function toggleCancelada(id, checked) {
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item) return;
+    if (checked) {
+      cancelarReserva(id);
+      return;
+    }
+    item.cancelada = false;
+    item.presenca = 'pendente';
+    item.presencaConfirmada = false;
+    item.vendaRealizada = false;
+    salvar();
+    renderLista();
+    renderPlanilha();
+    renderPresenca();
+    renderAlterar();
+    toast('Cancelamento removido.');
+  }
+
+  function verComprovante(id) {
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item || !item.comprovante) return;
+    document.getElementById('modal-img-src').src = item.comprovante;
+    document.getElementById('modal-img').style.display = 'flex';
+  }
+
+  function fecharModal() {
+    document.getElementById('modal-img').style.display = 'none';
+  }
+
+  function toast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = (type === 'danger' ? 'âš ï¸ ' : 'âœ“ ') + msg;
+    el.style.borderColor = type === 'danger' ? 'var(--danger-border)' : 'var(--border-strong)';
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  function exportarPlanilha(formato) {
+    if (!requirePermission('reservas.read', 'Seu usuário não pode exportar a planilha.')) return;
+    const linhas = getReservasFiltradas();
+    if (!linhas.length) {
+      toast('Nenhuma reserva para exportar.', 'danger');
+      return;
+    }
+
+    const confirmadas = linhas.filter(item => getPresencaEstado(item) === 'compareceu');
+    const noshow = linhas.filter(item => getPresencaEstado(item) === 'nao_compareceu');
+    const totalValor = confirmadas.reduce((soma, item) => soma + Number(item.valor || 0), 0) + noshow.reduce((soma, item) => soma + Number(item.valor || 0), 0);
+    const valorCompareceu = confirmadas.reduce((soma, item) => soma + Number(item.valor || 0), 0);
+    const valorNoshow = noshow.reduce((soma, item) => soma + Number(item.valor || 0), 0);
+
+    const dados = linhas.map(item => ({
+      'Nome da reserva': item.reserva || '',
+      'Nome do pagante': item.pagante || '',
+      'Q. pessoas': item.pessoas ?? '',
+      'Data da reserva': fmtDate(item.dataReserva),
+      'Data do pagamento': fmtDate(item.dataPagamento),
+      'Valor': Number(item.valor || 0),
+      'Anexo': item.comprovante ? 'Ver anexo' : '-',
+      'Status': getStatusVisual(item).label,
+      'Pagamento': getPagamentoLabel(item).label,
+      'Local': getLocalLabel(item),
+      'Motivo': item.motivo || '',
+      'OBS': item.obs || ''
+    }));
+
+    const nomeBase = 'reservas-' + new Date().toISOString().slice(0, 10);
+    if (formato === 'xlsx' && window.XLSX) {
+      const workbook = XLSX.utils.book_new();
+      const totalCompareceu = confirmadas.length;
+      const totalNoShow = noshow.length;
+      const cabecalhos = Object.keys(dados[0]);
+      const aoa = [
+        ['CONTROLE DE RESERVAS'],
+        [],
+        ['Total de reservas', linhas.length, '', 'Valor total', fmtValor(totalValor), '', 'Compareceram', totalCompareceu, '', 'Valor compareceu', fmtValor(valorCompareceu), '', 'No-show', totalNoShow, '', 'Valor no-show', fmtValor(valorNoshow), ''],
+        [],
+        cabecalhos,
+        ...dados.map(item => cabecalhos.map(chave => item[chave]))
+      ];
+      const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+      worksheet['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: cabecalhos.length - 1 } },
+        { s: { r: 2, c: 0 }, e: { r: 3, c: 1 } },
+        { s: { r: 2, c: 3 }, e: { r: 3, c: 4 } },
+        { s: { r: 2, c: 6 }, e: { r: 3, c: 7 } },
+        { s: { r: 2, c: 9 }, e: { r: 3, c: 10 } },
+        { s: { r: 2, c: 12 }, e: { r: 3, c: 13 } },
+        { s: { r: 2, c: 15 }, e: { r: 3, c: 16 } }
+      ];
+      worksheet['!cols'] = [
+        { wch: 22 }, { wch: 20 }, { wch: 10 }, { wch: 16 }, { wch: 16 },
+        { wch: 14 }, { wch: 12 }, { wch: 16 }, { wch: 14 }, { wch: 14 },
+        { wch: 18 }, { wch: 24 }, { wch: 12 }
+      ];
+      worksheet['!autofilter'] = { ref: `A5:M${aoa.length}` };
+      worksheet['!rows'] = [{ hpt: 24 }, { hpt: 6 }, { hpt: 28 }, { hpt: 6 }, { hpt: 22 }];
+
+      const styles = {
+        title: {
+          font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 14 },
+          fill: { patternType: 'solid', fgColor: { rgb: '111111' } },
+          alignment: { horizontal: 'center', vertical: 'center' }
+        },
+        summaryLabel: {
+          font: { bold: true, color: { rgb: 'D1D5DB' }, sz: 10 },
+          fill: { patternType: 'solid', fgColor: { rgb: '1F2937' } },
+          alignment: { horizontal: 'left', vertical: 'center' },
+          border: { top: { style: 'thin', color: { rgb: '374151' } }, bottom: { style: 'thin', color: { rgb: '374151' } }, left: { style: 'thin', color: { rgb: '374151' } }, right: { style: 'thin', color: { rgb: '374151' } } }
+        },
+        summaryValue: {
+          font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 12 },
+          fill: { patternType: 'solid', fgColor: { rgb: '1D4ED8' } },
+          alignment: { horizontal: 'left', vertical: 'center' },
+          border: { top: { style: 'thin', color: { rgb: '374151' } }, bottom: { style: 'thin', color: { rgb: '374151' } }, left: { style: 'thin', color: { rgb: '374151' } }, right: { style: 'thin', color: { rgb: '374151' } } }
+        },
+        header: {
+          font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 10 },
+          fill: { patternType: 'solid', fgColor: { rgb: '3B82F6' } },
+          alignment: { horizontal: 'center', vertical: 'center' },
+          border: { top: { style: 'thin', color: { rgb: 'BFDBFE' } }, bottom: { style: 'thin', color: { rgb: 'BFDBFE' } }, left: { style: 'thin', color: { rgb: 'BFDBFE' } }, right: { style: 'thin', color: { rgb: 'BFDBFE' } } }
+        },
+        body: {
+          font: { color: { rgb: '111111' }, sz: 10 },
+          fill: { patternType: 'solid', fgColor: { rgb: 'FFFFFF' } },
+          alignment: { vertical: 'center' },
+          border: { top: { style: 'thin', color: { rgb: 'D1D5DB' } }, bottom: { style: 'thin', color: { rgb: 'D1D5DB' } }, left: { style: 'thin', color: { rgb: 'D1D5DB' } }, right: { style: 'thin', color: { rgb: 'D1D5DB' } } }
+        },
+        altBody: {
+          font: { color: { rgb: '111111' }, sz: 10 },
+          fill: { patternType: 'solid', fgColor: { rgb: 'F3F4F6' } },
+          alignment: { vertical: 'center' },
+          border: { top: { style: 'thin', color: { rgb: 'D1D5DB' } }, bottom: { style: 'thin', color: { rgb: 'D1D5DB' } }, left: { style: 'thin', color: { rgb: 'D1D5DB' } }, right: { style: 'thin', color: { rgb: 'D1D5DB' } } }
+        }
+      };
+
+      Object.keys(worksheet).forEach(cell => {
+        if (cell[0] === '!') return;
+        const pos = XLSX.utils.decode_cell(cell);
+        if (pos.r === 0) {
+          worksheet[cell].s = styles.title;
+        } else if (pos.r === 2) {
+          worksheet[cell].s = [0, 3, 6, 9, 12, 15].includes(pos.c) ? styles.summaryLabel : styles.summaryValue;
+        } else if (pos.r === 4) {
+          worksheet[cell].s = styles.header;
+        } else if (pos.r > 4) {
+          worksheet[cell].s = ((pos.r - 5) % 2 === 0) ? styles.body : styles.altBody;
+        }
+      });
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Reservas');
+      XLSX.writeFile(workbook, nomeBase + '.xlsx');
+      return;
+    }
+
+    const cabecalhos = Object.keys(dados[0]);
+    const csv = [
+      cabecalhos.join(';'),
+      ...dados.map(linha => cabecalhos.map(campo => '"' + String(linha[campo] ?? '').replace(/"/g, '""') + '"').join(';'))
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeBase + '.csv';
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function montarIdentidadeKuroShiro() {
+    const topbarOriginal = document.querySelector('.topbar');
+    const appOriginal = document.querySelector('.app');
+    const navOriginal = document.querySelector('.nav');
+    if (!topbarOriginal || !appOriginal || !navOriginal) return;
+
+    const shell = document.createElement('div');
+    shell.className = 'app-shell';
+
+    const sidebar = document.createElement('aside');
+    sidebar.className = 'sidebar';
+    sidebar.innerHTML = `
+      <div class="brand-mark">
+        <img class="brand-logo" src="kuro-logo.png" alt="Logo Kuro">
+        <p class="brand-name">KURO<span style="color:var(--stone-light);font-size:14px;"> / </span>SHIRO</p>
+        <p class="brand-sub">Sistema de reservas</p>
+      </div>
+      <nav class="sidebar-nav"></nav>
+      <div class="sidebar-foot">
+        <b>Salão Kuro</b> · Balcão Shiro<br>Uso interno — equipe de sala
+      </div>
+    `;
+
+    const sidebarNav = sidebar.querySelector('.sidebar-nav');
+    navOriginal.querySelectorAll('.nav-btn').forEach(btn => {
+      const clone = btn.cloneNode(true);
+      clone.classList.add('sidebar-nav-btn');
+      sidebarNav.appendChild(clone);
+    });
+
+    const main = document.createElement('main');
+    main.className = 'main';
+
+    const topbar = document.createElement('div');
+    topbar.className = 'topbar';
+    const topbarActions = topbarOriginal.querySelector('.topbar-actions')?.cloneNode(true);
+    topbar.innerHTML = `
+      <div>
+        <div class="topbar-kicker">Painel interno</div>
+        <div class="topbar-brand"><i class="ti ti-calendar-event"></i>Controle de Reservas</div>
+        <div class="topbar-date">Segunda-feira, 3 de agosto de 2026</div>
+      </div>
+      <div class="topbar-actions"></div>
+    `;
+    if (topbarActions) {
+      topbar.querySelector('.topbar-actions').replaceWith(topbarActions);
+    }
+
+    const mainBody = document.createElement('section');
+    mainBody.className = 'main-body';
+
+    Array.from(appOriginal.querySelectorAll('.screen')).forEach(screen => {
+      mainBody.appendChild(screen);
+    });
+
+    main.append(topbar, mainBody);
+
+    shell.append(sidebar, main);
+    document.body.insertBefore(shell, topbarOriginal);
+    topbarOriginal.remove();
+    appOriginal.remove();
+  }
+
+  getSupabaseClient().then(async client => {
+    if (client) {
+      client.auth.onAuthStateChange(async (_event, session) => {
+        currentSession = session;
+        await carregarSessaoAtual();
+      });
+    }
+    await carregarSessaoAtual();
+  });
+</script>
+</body>
+</html>

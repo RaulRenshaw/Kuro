@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Supabase Auth Starter</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <section class="panel">
+      <div class="panel-head">
+        <p class="eyebrow">Supabase Auth</p>
+        <h1>Login com roles e permissões</h1>
+        <p class="muted">Base mínima para autenticação, sessão e gestão de acesso.</p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h2>Configuração</h2>
+          <label>Supabase URL</label>
+          <input id="sb-url" type="text" placeholder="https://xxxx.supabase.co">
+
+          <label>Publishable key</label>
+          <textarea id="sb-key" rows="4" placeholder="sb_publishable_..."></textarea>
+
+          <button id="init-btn" class="btn primary">Inicializar cliente</button>
+          <p id="init-status" class="hint">Informe URL e publishable key.</p>
+        </div>
+
+        <div class="card">
+          <h2>Acesso</h2>
+          <label>Email</label>
+          <input id="email" type="email" placeholder="voce@empresa.com">
+
+          <label>Senha</label>
+          <input id="password" type="password" placeholder="••••••••">
+
+          <div class="actions">
+            <button id="login-btn" class="btn primary">Entrar</button>
+            <button id="signup-btn" class="btn">Cadastrar</button>
+            <button id="logout-btn" class="btn danger">Sair</button>
+          </div>
+
+          <p id="auth-status" class="hint">Nenhuma sessão ativa.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <p class="eyebrow">Sessão atual</p>
+        <h2>Usuário logado</h2>
+      </div>
+      <div class="card">
+        <pre id="session-view" class="code-block">Sem sessão.</pre>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <p class="eyebrow">Autorização</p>
+        <h2>Permissões efetivas</h2>
+      </div>
+      <div class="card">
+        <div id="permissions-list" class="pill-wrap">
+          <span class="pill muted-pill">Sem permissões carregadas.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <p class="eyebrow">Administração</p>
+        <h2>Usuários e roles</h2>
+        <p class="muted">Disponível para quem tiver `usuarios.read` e `usuarios.manage`.</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h3>Listagem</h3>
+          <button id="refresh-users-btn" class="btn">Atualizar usuários</button>
+          <pre id="users-view" class="code-block">Sem dados.</pre>
+        </div>
+
+        <div class="card">
+          <h3>Alterar role</h3>
+          <label>User ID</label>
+          <input id="target-user-id" type="text" placeholder="UUID do usuário">
+
+          <label>Role</label>
+          <select id="role-key">
+            <option value="admin">admin</option>
+            <option value="gerente">gerente</option>
+            <option value="recepcao">recepcao</option>
+            <option value="financeiro">financeiro</option>
+          </select>
+
+          <div class="actions">
+            <button id="assign-role-btn" class="btn primary">Atribuir role</button>
+            <button id="remove-role-btn" class="btn danger">Remover role</button>
+          </div>
+
+          <p id="admin-status" class="hint">Nenhuma ação executada.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
