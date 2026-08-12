@@ -1257,8 +1257,6 @@
 
       <div class="auth-actions">
         <button class="btn primary" type="button" onclick="loginApp()"><i class="ti ti-login"></i> Entrar</button>
-        <button class="btn" type="button" onclick="carregarSessaoAtual()"><i class="ti ti-refresh"></i> Atualizar sessão</button>
-        <button class="btn" type="button" onclick="logoutApp()"><i class="ti ti-logout"></i> Sair</button>
       </div>
 
       <div class="status-box" id="auth-status-box">Aguardando autenticação.</div>
@@ -1702,17 +1700,6 @@
     if (el) el.textContent = message;
   }
 
-  function renderPermissionPreview() {
-    const host = document.getElementById('auth-permissions-preview');
-    if (!host) return;
-    const items = Array.from(currentPermissions);
-    if (!items.length) {
-      host.innerHTML = '<span class="perm-chip">Sem permissões carregadas</span>';
-      return;
-    }
-    host.innerHTML = items.map(item => `<span class="perm-chip">${escHtml(item)}</span>`).join('');
-  }
-
   function hasPermission(permission) {
     return currentPermissions.has(permission);
   }
@@ -1868,7 +1855,6 @@
     renderPermissionPreview();
     updatePermissionUI();
     lockApp();
-    updateAuthStatus('Sessão encerrada.');
   }
 
   function normalizarReserva(item = {}) {
