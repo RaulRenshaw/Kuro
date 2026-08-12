@@ -32,6 +32,9 @@
     --warning-bg: #fffbeb;
     --warning-text: #b45309;
     --warning-border: #fde68a;
+    --gold-bg: #fdf6e3;
+    --gold-text: #92700f;
+    --gold-border: #f0dfa8;
     --radius: 10px;
     --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
   }
@@ -57,6 +60,9 @@
       --warning-bg: #2d2008;
       --warning-text: #fbbf24;
       --warning-border: #78350f;
+      --gold-bg: #2d2408;
+      --gold-text: #e0b73f;
+      --gold-border: #78600f;
     }
   }
   body {
@@ -201,6 +207,8 @@
   .btn.primary:hover { opacity: 0.92; }
   .btn.danger { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
   .btn.success-btn { background: var(--success-bg); color: var(--success-text); border-color: var(--success-border); }
+  .btn.pay-btn { background: var(--gold-bg); color: var(--gold-text); border-color: var(--gold-border); }
+  .btn.pay-btn.active { background: var(--gold-text); color: #fff; border-color: var(--gold-text); }
   .actions {
     display: flex;
     gap: 8px;
@@ -453,6 +461,10 @@
     --warning-bg: rgba(140,133,121,0.10);
     --warning-text: #6D665B;
     --warning-border: rgba(140,133,121,0.18);
+    --gold: #A6791C;
+    --gold-bg: rgba(166,121,28,0.10);
+    --gold-text: #8A651A;
+    --gold-border: rgba(166,121,28,0.24);
   }
   body {
     background: var(--paper);
@@ -821,6 +833,16 @@
     background: rgba(158,27,27,0.08);
     color: var(--red-deep);
     border-color: rgba(158,27,27,0.18);
+  }
+  .btn.pay-btn {
+    background: var(--gold-bg);
+    color: var(--gold-text);
+    border-color: var(--gold-border);
+  }
+  .btn.pay-btn.active {
+    background: var(--gold);
+    color: var(--paper);
+    border-color: var(--gold);
   }
   .badge {
     border-radius: 999px;
@@ -1227,14 +1249,16 @@
       <h2>Entrar no painel</h2>
       <p class="hint">Use o mesmo usuário cadastrado no Supabase Auth.</p>
 
-      <label>Email</label>
-      <input type="email" id="auth-email" placeholder="voce@empresa.com">
+      <label>Usuário</label>
+      <input type="text" id="auth-username" placeholder="Ex: CAOKI" autocapitalize="characters" autocomplete="username">
 
       <label>Senha</label>
       <input type="password" id="auth-password" placeholder="••••••••">
 
       <div class="auth-actions">
         <button class="btn primary" type="button" onclick="loginApp()"><i class="ti ti-login"></i> Entrar</button>
+        <button class="btn" type="button" onclick="carregarSessaoAtual()"><i class="ti ti-refresh"></i> Atualizar sessão</button>
+        <button class="btn" type="button" onclick="logoutApp()"><i class="ti ti-logout"></i> Sair</button>
       </div>
 
       <div class="status-box" id="auth-status-box">Aguardando autenticação.</div>
@@ -1648,6 +1672,19 @@
   let currentPermissions = new Set();
   let appBooted = false;
 
+  // Login por usuário (ex: CAOKI) em vez de email. Internamente o Supabase Auth
+  // continua exigindo um email válido, então convertemos usuário <-> email
+  // usando um domínio interno fixo que nunca é exposto na tela de login.
+  const AUTH_USERNAME_DOMAIN = '@bottega.internal';
+
+  function usernameToEmail(username) {
+    return String(username || '').trim().toLowerCase().replace(/\s+/g, '') + AUTH_USERNAME_DOMAIN;
+  }
+
+  function emailToUsername(email) {
+    return String(email || '').split('@')[0].toUpperCase();
+  }
+
   function salvar() {
     localStorage.setItem('reservas', JSON.stringify(reservas));
     syncQueue = syncQueue
@@ -1712,7 +1749,7 @@
 
     const badge = document.getElementById('auth-user-badge');
     if (badge) {
-      badge.textContent = currentSession?.user?.email || 'Sessão indisponível';
+      badge.textContent = currentSession?.user?.email ? emailToUsername(currentSession.user.email) : 'Sessão indisponível';
       badge.title = currentSession?.user?.id || '';
     }
   }
@@ -1790,12 +1827,12 @@
 
     if (!hasPermission('reservas.read')) {
       lockApp();
-      updateAuthStatus(`Login realizado para ${currentSession.user.email}.\nEste usuário não possui a permissão reservas.read.`);
+      updateAuthStatus(`Login realizado como ${emailToUsername(currentSession.user.email)}.\nEste usuário não possui a permissão reservas.read.`);
       return;
     }
 
     unlockApp();
-    updateAuthStatus(`Login realizado para ${currentSession.user.email}.`);
+    updateAuthStatus(`Login realizado como ${emailToUsername(currentSession.user.email)}.`);
     await bootApp();
   }
 
@@ -1806,13 +1843,14 @@
       return;
     }
 
-    const email = document.getElementById('auth-email').value.trim();
+    const username = document.getElementById('auth-username').value.trim();
     const password = document.getElementById('auth-password').value;
-    if (!email || !password) {
-      updateAuthStatus('Informe email e senha.');
+    if (!username || !password) {
+      updateAuthStatus('Informe usuário e senha.');
       return;
     }
 
+    const email = usernameToEmail(username);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       updateAuthStatus('Falha no login: ' + error.message);
@@ -1850,6 +1888,7 @@
       cancelada,
       presencaConfirmada: typeof item.presenca_confirmada === 'boolean' ? item.presenca_confirmada : !!item.presencaConfirmada,
       vendaRealizada: typeof item.venda_realizada === 'boolean' ? item.venda_realizada : !!item.vendaRealizada,
+      pagamentoConfirmado: typeof item.pagamento_confirmado === 'boolean' ? item.pagamento_confirmado : !!item.pagamentoConfirmado,
       comprovante: item.comprovante || null,
       obs: item.obs || '',
       presenca,
@@ -1875,6 +1914,7 @@
       presenca,
       presenca_confirmada: !cancelada && !!item.presencaConfirmada,
       venda_realizada: !cancelada && !!item.vendaRealizada,
+      pagamento_confirmado: !!item.pagamentoConfirmado,
       cancelada,
       comprovante: item.comprovante || null,
       obs: item.obs || null,
@@ -1969,8 +2009,8 @@
 
   function getPagamentoLabel(item) {
     if (isCancelada(item)) return { label: 'Reembolsado', className: 'reembolsado' };
-    if (getPresencaEstado(item) === 'pendente') return { label: 'Em aberto', className: 'aberto' };
-    return { label: 'Pago', className: 'pago' };
+    if (item.pagamentoConfirmado) return { label: 'Pago', className: 'pago' };
+    return { label: 'Em aberto', className: 'aberto' };
   }
 
   function getStatusVisual(item) {
@@ -2243,6 +2283,7 @@
       const canCheckin = hasPermission('reservas.checkin');
       const canNoShow = hasPermission('reservas.no_show');
       const canCancel = hasPermission('reservas.cancel');
+      const canConfirmPagamento = hasPermission('pagamentos.confirm');
       return `
       <tr>
         <td>${fmtTime(item.horario)}</td>
@@ -2263,8 +2304,11 @@
         <td>
           <div class="actions-cell">
             ${canUpdate ? `<button class="btn mini-btn" onclick='editarReserva(${jsStr(item.id)})' title="Editar"><i class="ti ti-edit"></i></button>` : ''}
-            ${!isCancelada(item) && canCheckin ? `<button class="btn success-btn mini-btn" onclick='setPresenca(${jsStr(item.id)},"compareceu")' title="Confirmar presença"><i class="ti ti-check"></i></button>` : ''}
-            ${!isCancelada(item) && canNoShow ? `<button class="btn danger mini-btn" onclick='setPresenca(${jsStr(item.id)},"nao_compareceu")' title="Marcar no-show"><i class="ti ti-user-x"></i></button>` : ''}
+            ${!isCancelada(item) && canCheckin ? `<button class="btn success-btn mini-btn" onclick='setPresenca(${jsStr(item.id)},"compareceu")' title="Confirmar presença (compareceu)"><i class="ti ti-check"></i></button>` : ''}
+            ${!isCancelada(item) && canNoShow ? `<button class="btn danger mini-btn" onclick='setPresenca(${jsStr(item.id)},"nao_compareceu")' title="Marcar no-show (não compareceu)"><i class="ti ti-user-x"></i></button>` : ''}
+            ${!isCancelada(item) && canConfirmPagamento ? (item.pagamentoConfirmado
+              ? `<button class="btn pay-btn active mini-btn" onclick='setPagamento(${jsStr(item.id)}, false)' title="Pagamento confirmado — clique para desfazer"><i class="ti ti-cash"></i></button>`
+              : `<button class="btn pay-btn mini-btn" onclick='setPagamento(${jsStr(item.id)}, true)' title="Confirmar pagamento"><i class="ti ti-cash"></i></button>`) : ''}
             ${canCancel ? (!isCancelada(item) ? `<button class="btn mini-btn" onclick='cancelarReserva(${jsStr(item.id)})' title="Cancelar reserva"><i class="ti ti-ban"></i></button>` : `<button class="btn mini-btn" onclick='reativarReserva(${jsStr(item.id)})' title="Reativar reserva"><i class="ti ti-arrow-back-up"></i></button>`) : ''}
           </div>
         </td>
@@ -2326,6 +2370,7 @@
     const canNoShow = hasPermission('reservas.no_show');
     const canCancel = hasPermission('reservas.cancel');
     const canDelete = hasPermission('reservas.delete');
+    const canConfirmPagamento = hasPermission('pagamentos.confirm');
     el.innerHTML = linhas.map(item => `
       <tr>
         <td>${escHtml(item.reserva)}</td>
@@ -2347,11 +2392,14 @@
         <td class="muted" title="${escHtml(item.obs || '')}">${escHtml(item.obs || '-')}</td>
         <td>
           <div class="actions-cell">
-            ${canUpdate ? `<button class="btn mini-btn" onclick='editarReserva(${jsStr(item.id)})'><i class="ti ti-edit"></i></button>` : ''}
-            ${!isCancelada(item) && canCheckin ? `<button class="btn success-btn mini-btn" onclick='setPresenca(${jsStr(item.id)},"compareceu")'><i class="ti ti-check"></i></button>` : ''}
-            ${!isCancelada(item) && canNoShow ? `<button class="btn danger mini-btn" onclick='setPresenca(${jsStr(item.id)},"nao_compareceu")'><i class="ti ti-user-x"></i></button>` : ''}
-            ${canCancel ? (!isCancelada(item) ? `<button class="btn mini-btn" onclick='cancelarReserva(${jsStr(item.id)})'><i class="ti ti-ban"></i></button>` : `<button class="btn mini-btn" onclick='reativarReserva(${jsStr(item.id)})'><i class="ti ti-arrow-back-up"></i></button>`) : ''}
-            ${canDelete ? `<button class="btn danger mini-btn" onclick='excluir(${jsStr(item.id)})'><i class="ti ti-trash"></i></button>` : ''}
+            ${canUpdate ? `<button class="btn mini-btn" onclick='editarReserva(${jsStr(item.id)})' title="Editar"><i class="ti ti-edit"></i></button>` : ''}
+            ${!isCancelada(item) && canCheckin ? `<button class="btn success-btn mini-btn" onclick='setPresenca(${jsStr(item.id)},"compareceu")' title="Confirmar presença (compareceu)"><i class="ti ti-check"></i></button>` : ''}
+            ${!isCancelada(item) && canNoShow ? `<button class="btn danger mini-btn" onclick='setPresenca(${jsStr(item.id)},"nao_compareceu")' title="Marcar no-show (não compareceu)"><i class="ti ti-user-x"></i></button>` : ''}
+            ${!isCancelada(item) && canConfirmPagamento ? (item.pagamentoConfirmado
+              ? `<button class="btn pay-btn active mini-btn" onclick='setPagamento(${jsStr(item.id)}, false)' title="Pagamento confirmado — clique para desfazer"><i class="ti ti-cash"></i></button>`
+              : `<button class="btn pay-btn mini-btn" onclick='setPagamento(${jsStr(item.id)}, true)' title="Confirmar pagamento"><i class="ti ti-cash"></i></button>`) : ''}
+            ${canCancel ? (!isCancelada(item) ? `<button class="btn mini-btn" onclick='cancelarReserva(${jsStr(item.id)})' title="Cancelar reserva"><i class="ti ti-ban"></i></button>` : `<button class="btn mini-btn" onclick='reativarReserva(${jsStr(item.id)})' title="Reativar reserva"><i class="ti ti-arrow-back-up"></i></button>`) : ''}
+            ${canDelete ? `<button class="btn danger mini-btn" onclick='excluir(${jsStr(item.id)})' title="Excluir"><i class="ti ti-trash"></i></button>` : ''}
           </div>
         </td>
       </tr>
@@ -2444,6 +2492,17 @@
     renderPlanilha();
     renderPresenca();
     toast(status === 'compareceu' ? 'Presença confirmada!' : 'Ausência registrada.');
+  }
+
+  function setPagamento(id, confirmado) {
+    if (!requirePermission('pagamentos.confirm', 'Seu usuário não pode confirmar pagamentos.')) return;
+    const item = reservas.find(reserva => reserva.id === id);
+    if (!item) return;
+    item.pagamentoConfirmado = confirmado;
+    salvar();
+    renderLista();
+    renderPlanilha();
+    toast(confirmado ? 'Pagamento confirmado!' : 'Pagamento marcado como em aberto.');
   }
 
   function togglePresencaConfirmada(id, checked) {
