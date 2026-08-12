@@ -713,6 +713,7 @@
   }
   .agenda-table {
     width: 100%;
+    min-width: 900px;
     border-collapse: collapse;
     table-layout: fixed;
   }
@@ -2001,18 +2002,10 @@
     const { data, error } = await supabase.from('reservas').select('*').order('created_at', { ascending: false });
     if (error) throw error;
 
-    if (!data || !data.length) {
-      const cacheLocal = JSON.parse(localStorage.getItem('reservas') || '[]').map(normalizarReserva);
-      if (cacheLocal.length) {
-        reservas = cacheLocal;
-        await sincronizarBanco();
-        return;
-      }
-      reservas = [];
-      return;
-    }
-
-    reservas = data.map(normalizarReserva);
+    // O Supabase é a fonte da verdade. Uma tabela vazia é um estado válido
+    // (ex: alguém apagou tudo) — não deve reenviar o cache local antigo,
+    // senão registros apagados no banco voltam a aparecer sozinhos.
+    reservas = (data || []).map(normalizarReserva);
     localStorage.setItem('reservas', JSON.stringify(reservas));
   }
 
