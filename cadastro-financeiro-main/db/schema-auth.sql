@@ -165,6 +165,9 @@ with role_permission_map as (
   select 'gerente', 'reservas.checkin' union all
   select 'gerente', 'reservas.no_show' union all
   -- recepcao
+  
+  select 'recepcao', 'reservas.create' union all
+  select 'recepcao', 'reservas.update' union all
   select 'recepcao', 'reservas.read' union all
   select 'recepcao', 'reservas.change_date' union all
   select 'recepcao', 'reservas.cancel' union all
