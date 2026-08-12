@@ -125,7 +125,8 @@ values
   ('admin', 'Administrador', 'Acesso total'),
   ('gerente', 'Gerente', 'Gestao operacional'),
   ('recepcao', 'Recepcao', 'Operacao de reservas'),
-  ('financeiro', 'Financeiro', 'Operacao financeira')
+  ('financeiro', 'Financeiro', 'Operacao financeira'),
+  ('visualizacao', 'Visualizacao', 'Apenas leitura')
 on conflict (key) do update
 set name = excluded.name, description = excluded.description;
 
@@ -138,35 +139,38 @@ values
   ('reservas.checkin', 'Confirmar presença'),
   ('reservas.no_show', 'Marcar no-show'),
   ('reservas.delete', 'Excluir reservas'),
+  ('reservas.change_date', 'Alterar data da reserva'),
   ('pagamentos.read', 'Ler pagamentos'),
   ('pagamentos.confirm', 'Confirmar pagamentos')
 on conflict (key) do update
 set description = excluded.description;
 
+-- Limpar mapeamentos existentes para evitar permissões residuais antigas
+delete from app_auth.role_permissions;
+
 with role_permission_map as (
+  -- admin
   select 'admin'::text as role_key, 'reservas.read'::text as permission_key union all
   select 'admin', 'reservas.create' union all
   select 'admin', 'reservas.update' union all
+  select 'admin', 'reservas.change_date' union all
   select 'admin', 'reservas.cancel' union all
   select 'admin', 'reservas.checkin' union all
   select 'admin', 'reservas.no_show' union all
   select 'admin', 'reservas.delete' union all
   select 'admin', 'pagamentos.read' union all
   select 'admin', 'pagamentos.confirm' union all
+  -- gerente
   select 'gerente', 'reservas.read' union all
-  select 'gerente', 'reservas.create' union all
-  select 'gerente', 'reservas.update' union all
-  select 'gerente', 'reservas.cancel' union all
   select 'gerente', 'reservas.checkin' union all
   select 'gerente', 'reservas.no_show' union all
-  select 'gerente', 'pagamentos.read' union all
-  select 'gerente', 'pagamentos.confirm' union all
+  -- recepcao
   select 'recepcao', 'reservas.read' union all
-  select 'recepcao', 'reservas.create' union all
-  select 'recepcao', 'reservas.update' union all
+  select 'recepcao', 'reservas.change_date' union all
   select 'recepcao', 'reservas.cancel' union all
-  select 'recepcao', 'reservas.checkin' union all
-  select 'recepcao', 'reservas.no_show' union all
+  -- visualizacao
+  select 'visualizacao', 'reservas.read' union all
+  -- financeiro
   select 'financeiro', 'reservas.read' union all
   select 'financeiro', 'pagamentos.read' union all
   select 'financeiro', 'pagamentos.confirm'
@@ -239,12 +243,14 @@ begin
         or (select app_auth.authorize('reservas.checkin'))
         or (select app_auth.authorize('reservas.no_show'))
         or (select app_auth.authorize('reservas.cancel'))
+        or (select app_auth.authorize('reservas.change_date'))
       )
       with check (
         (select app_auth.authorize('reservas.update'))
         or (select app_auth.authorize('reservas.checkin'))
         or (select app_auth.authorize('reservas.no_show'))
         or (select app_auth.authorize('reservas.cancel'))
+        or (select app_auth.authorize('reservas.change_date'))
       )
     $sql$;
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -541,7 +541,7 @@
   .sidebar .nav-btn.active {
     justify-content: flex-start;
     border-radius: 4px;
-    padding: 11px 12px;
+    padding: 6px 12px;
     min-width: 0;
     width: 100%;
     border: 0;
@@ -549,6 +549,7 @@
     color: var(--stone-light);
     font-size: 13px;
     letter-spacing: 0.02em;
+    flex: none;
   }
   .sidebar .nav-btn:hover { background: rgba(250,247,241,0.04); color: var(--paper); }
   .sidebar .nav-btn.active { background: rgba(158,27,27,0.16); color: var(--paper); }
@@ -1803,16 +1804,33 @@
     const canRead = hasPermission('reservas.read');
     const canCreate = hasPermission('reservas.create');
     const canUpdate = hasPermission('reservas.update');
-    const canPresence = hasAnyPermission(['reservas.read', 'reservas.checkin', 'reservas.no_show']);
+    const canChangeDate = hasPermission('reservas.change_date');
+    const canPresence = hasAnyPermission(['reservas.checkin', 'reservas.no_show']);
+    const canCancel = hasPermission('reservas.cancel');
+    const canConfirmPagamento = hasPermission('pagamentos.confirm');
+    const canDelete = hasPermission('reservas.delete');
 
     setHidden('nav-lista', !canRead);
     setHidden('nav-planilha', !canRead);
     setHidden('nav-nova', !canCreate);
     setHidden('nav-presenca', !canPresence);
-    setHidden('nav-alterar', !canUpdate);
+    setHidden('nav-alterar', !canChangeDate);
     setHidden('topbar-planilha-btn', !canRead);
     setHidden('topbar-nova-btn', !canCreate);
     setHidden('auth-logout-btn', !currentSession);
+
+    // Ocultar cabeçalhos de ações se não houver permissão para nenhuma ação
+    const hasAnyActionLista = canUpdate || canPresence || canCancel || canConfirmPagamento;
+    const hasAnyActionPlanilha = canUpdate || canPresence || canCancel || canConfirmPagamento || canDelete;
+
+    const thAcoes = document.querySelector('.agenda-table th.center:last-child');
+    if (thAcoes) {
+      thAcoes.style.display = hasAnyActionLista ? '' : 'none';
+    }
+    const thAjustes = document.querySelector('.sheet-table th.center:last-child');
+    if (thAjustes) {
+      thAjustes.style.display = hasAnyActionPlanilha ? '' : 'none';
+    }
 
     const badge = document.getElementById('auth-user-badge');
     if (badge) {
@@ -2088,8 +2106,8 @@
   function showScreen(nome) {
     if (nome === 'lista' && !hasPermission('reservas.read')) return toast('Sem permissão para ver reservas.', 'danger');
     if (nome === 'planilha' && !hasPermission('reservas.read')) return toast('Sem permissão para ver a planilha.', 'danger');
-    if (nome === 'presenca' && !hasAnyPermission(['reservas.read', 'reservas.checkin', 'reservas.no_show'])) return toast('Sem permissão para ver presenças.', 'danger');
-    if (nome === 'alterar' && !hasPermission('reservas.update')) return toast('Sem permissão para alterar datas.', 'danger');
+    if (nome === 'presenca' && !hasAnyPermission(['reservas.checkin', 'reservas.no_show'])) return toast('Sem permissão para ver presenças.', 'danger');
+    if (nome === 'alterar' && !hasPermission('reservas.change_date')) return toast('Sem permissão para alterar datas.', 'danger');
     if (nome === 'nova' && !hasAnyPermission(['reservas.create', 'reservas.update'])) return toast('Sem permissão para acessar o formulário de reserva.', 'danger');
     document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -2317,6 +2335,13 @@
       return dataA.localeCompare(dataB);
     });
 
+    const canUpdate = hasPermission('reservas.update');
+    const canCheckin = hasPermission('reservas.checkin');
+    const canNoShow = hasPermission('reservas.no_show');
+    const canCancel = hasPermission('reservas.cancel');
+    const canConfirmPagamento = hasPermission('pagamentos.confirm');
+    const hasAnyActionLista = canUpdate || canCheckin || canNoShow || canCancel || canConfirmPagamento;
+
     document.getElementById('agenda-count').textContent = `${agenda.length} reserva${agenda.length === 1 ? '' : 's'}`;
     const cobertos = agenda.filter(item => !isCancelada(item)).reduce((soma, item) => soma + Number(item.pessoas || 0), 0);
     const confirmadas = agenda.filter(item => getPresencaEstado(item) === 'compareceu');
@@ -2332,18 +2357,14 @@
     document.getElementById('stat-noshow-valor').textContent = fmtValor(valorNoshow) + ' recebidos';
 
     if (!agenda.length) {
-      el.innerHTML = '<tr><td colspan="8"><div class="agenda-empty">Nenhuma reserva cadastrada ainda.</div></td></tr>';
+      const colSpanCount = hasAnyActionLista ? 8 : 7;
+      el.innerHTML = `<tr><td colspan="${colSpanCount}"><div class="agenda-empty">Nenhuma reserva cadastrada ainda.</div></td></tr>`;
       return;
     }
 
     el.innerHTML = agenda.map(item => {
       const status = getStatusVisual(item);
       const pagamento = getPagamentoLabel(item);
-      const canUpdate = hasPermission('reservas.update');
-      const canCheckin = hasPermission('reservas.checkin');
-      const canNoShow = hasPermission('reservas.no_show');
-      const canCancel = hasPermission('reservas.cancel');
-      const canConfirmPagamento = hasPermission('pagamentos.confirm');
       return `
       <tr>
         <td>${fmtTime(item.horario)}</td>
@@ -2361,6 +2382,7 @@
         </td>
         <td><span class="pay-pill ${pagamento.className}">${pagamento.label}</span></td>
         <td class="right valor">${fmtValor(item.valor)}</td>
+        ${hasAnyActionLista ? `
         <td>
           <div class="actions-cell">
             ${canUpdate ? `<button class="btn mini-btn" onclick='editarReserva(${jsStr(item.id)})' title="Editar"><i class="ti ti-edit"></i></button>` : ''}
@@ -2371,7 +2393,7 @@
               : `<button class="btn pay-btn mini-btn" onclick='setPagamento(${jsStr(item.id)}, true)' title="Confirmar pagamento"><i class="ti ti-cash"></i></button>`) : ''}
             ${canCancel ? (!isCancelada(item) ? `<button class="btn mini-btn" onclick='cancelarReserva(${jsStr(item.id)})' title="Cancelar reserva"><i class="ti ti-ban"></i></button>` : `<button class="btn mini-btn" onclick='reativarReserva(${jsStr(item.id)})' title="Reativar reserva"><i class="ti ti-arrow-back-up"></i></button>`) : ''}
           </div>
-        </td>
+        </td>` : ''}
       </tr>`;
     }).join('');
   }
@@ -2420,17 +2442,20 @@
     document.getElementById('sheet-noshow').textContent = totalNoShow;
     document.getElementById('sheet-noshow-valor').textContent = fmtValor(valorNoShow) + ' recebidos';
 
-    if (!linhas.length) {
-      el.innerHTML = '<tr><td colspan="13"><div class="sheet-empty">Nenhuma reserva encontrada.</div></td></tr>';
-      return;
-    }
-
     const canUpdate = hasPermission('reservas.update');
     const canCheckin = hasPermission('reservas.checkin');
     const canNoShow = hasPermission('reservas.no_show');
     const canCancel = hasPermission('reservas.cancel');
     const canDelete = hasPermission('reservas.delete');
     const canConfirmPagamento = hasPermission('pagamentos.confirm');
+    const hasAnyActionPlanilha = canUpdate || canCheckin || canNoShow || canCancel || canConfirmPagamento || canDelete;
+
+    if (!linhas.length) {
+      const colSpanCount = hasAnyActionPlanilha ? 13 : 12;
+      el.innerHTML = `<tr><td colspan="${colSpanCount}"><div class="sheet-empty">Nenhuma reserva encontrada.</div></td></tr>`;
+      return;
+    }
+
     el.innerHTML = linhas.map(item => `
       <tr>
         <td>${escHtml(item.reserva)}</td>
@@ -2450,6 +2475,7 @@
         <td>${escHtml(getLocalLabel(item))}</td>
         <td class="muted">${escHtml(item.motivo || '-')}</td>
         <td class="muted" title="${escHtml(item.obs || '')}">${escHtml(item.obs || '-')}</td>
+        ${hasAnyActionPlanilha ? `
         <td>
           <div class="actions-cell">
             ${canUpdate ? `<button class="btn mini-btn" onclick='editarReserva(${jsStr(item.id)})' title="Editar"><i class="ti ti-edit"></i></button>` : ''}
@@ -2461,7 +2487,7 @@
             ${canCancel ? (!isCancelada(item) ? `<button class="btn mini-btn" onclick='cancelarReserva(${jsStr(item.id)})' title="Cancelar reserva"><i class="ti ti-ban"></i></button>` : `<button class="btn mini-btn" onclick='reativarReserva(${jsStr(item.id)})' title="Reativar reserva"><i class="ti ti-arrow-back-up"></i></button>`) : ''}
             ${canDelete ? `<button class="btn danger mini-btn" onclick='excluir(${jsStr(item.id)})' title="Excluir"><i class="ti ti-trash"></i></button>` : ''}
           </div>
-        </td>
+        </td>` : ''}
       </tr>
     `).join('');
   }
@@ -2521,7 +2547,7 @@
   }
 
   function alterarData() {
-    if (!requirePermission('reservas.update', 'Seu usuário não pode alterar a data da reserva.')) return;
+    if (!requirePermission('reservas.change_date', 'Seu usuário não pode alterar a data da reserva.')) return;
     const id = document.getElementById('alt-select').value;
     const novaData = document.getElementById('alt-nova-data').value;
     if (!novaData) {

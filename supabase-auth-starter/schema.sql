@@ -213,7 +213,8 @@ values
   ('admin', 'Administrador', 'Acesso total ao sistema'),
   ('gerente', 'Gerente', 'Acompanha operação e gestão'),
   ('recepcao', 'Recepção', 'Opera reservas e atendimento'),
-  ('financeiro', 'Financeiro', 'Opera confirmações financeiras')
+  ('financeiro', 'Financeiro', 'Opera confirmações financeiras'),
+  ('visualizacao', 'Visualização', 'Apenas leitura')
 on conflict (key) do update
 set
   name = excluded.name,
@@ -227,6 +228,7 @@ values
   ('reservas.cancel', 'Cancelar reservas'),
   ('reservas.checkin', 'Confirmar presença'),
   ('reservas.no_show', 'Marcar no-show'),
+  ('reservas.change_date', 'Alterar data da reserva'),
   ('pagamentos.read', 'Ler pagamentos'),
   ('pagamentos.confirm', 'Confirmar pagamentos'),
   ('usuarios.read', 'Listar usuários'),
@@ -234,10 +236,15 @@ values
 on conflict (key) do update
 set description = excluded.description;
 
+-- Limpar mapeamentos antigos
+delete from app_auth.role_permissions;
+
 with role_permission_map as (
+  -- admin
   select 'admin'::text as role_key, 'reservas.read'::text as permission_key union all
   select 'admin', 'reservas.create' union all
   select 'admin', 'reservas.update' union all
+  select 'admin', 'reservas.change_date' union all
   select 'admin', 'reservas.cancel' union all
   select 'admin', 'reservas.checkin' union all
   select 'admin', 'reservas.no_show' union all
@@ -245,21 +252,17 @@ with role_permission_map as (
   select 'admin', 'pagamentos.confirm' union all
   select 'admin', 'usuarios.read' union all
   select 'admin', 'usuarios.manage' union all
+  -- gerente
   select 'gerente', 'reservas.read' union all
-  select 'gerente', 'reservas.create' union all
-  select 'gerente', 'reservas.update' union all
-  select 'gerente', 'reservas.cancel' union all
   select 'gerente', 'reservas.checkin' union all
   select 'gerente', 'reservas.no_show' union all
-  select 'gerente', 'pagamentos.read' union all
-  select 'gerente', 'pagamentos.confirm' union all
-  select 'gerente', 'usuarios.read' union all
+  -- recepcao
   select 'recepcao', 'reservas.read' union all
-  select 'recepcao', 'reservas.create' union all
-  select 'recepcao', 'reservas.update' union all
+  select 'recepcao', 'reservas.change_date' union all
   select 'recepcao', 'reservas.cancel' union all
-  select 'recepcao', 'reservas.checkin' union all
-  select 'recepcao', 'reservas.no_show' union all
+  -- visualizacao
+  select 'visualizacao', 'reservas.read' union all
+  -- financeiro
   select 'financeiro', 'pagamentos.read' union all
   select 'financeiro', 'pagamentos.confirm' union all
   select 'financeiro', 'reservas.read'
