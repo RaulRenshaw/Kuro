@@ -1700,6 +1700,17 @@
     if (el) el.textContent = message;
   }
 
+  function renderPermissionPreview() {
+    const host = document.getElementById('auth-permissions-preview');
+    if (!host) return;
+    const items = Array.from(currentPermissions);
+    if (!items.length) {
+      host.innerHTML = '<span class="perm-chip">Sem permissões carregadas</span>';
+      return;
+    }
+    host.innerHTML = items.map(item => `<span class="perm-chip">${escHtml(item)}</span>`).join('');
+  }
+
   function hasPermission(permission) {
     return currentPermissions.has(permission);
   }
@@ -1855,6 +1866,7 @@
     renderPermissionPreview();
     updatePermissionUI();
     lockApp();
+    updateAuthStatus('Sessão encerrada.');
   }
 
   function normalizarReserva(item = {}) {
