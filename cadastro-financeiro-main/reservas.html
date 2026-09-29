@@ -277,6 +277,11 @@
     margin-top: 8px;
     border: 0.5px solid var(--border);
   }
+  .comprovantes-preview { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+  .comprovante-item { position: relative; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--surface-alt); min-height: 78px; }
+  .comprovante-item img { width: 100%; height: 86px; object-fit: cover; display: block; cursor: pointer; }
+  .comprovante-item .file-label { display: block; padding: 8px; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .comprovante-item .remove-file { position: absolute; top: 4px; right: 4px; padding: 2px 5px; border: 0; border-radius: 4px; background: rgba(17,16,17,.78); color: #fff; cursor: pointer; }
   .empty { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 14px; }
   .empty i { font-size: 36px; display: block; margin-bottom: 10px; color: var(--text-muted); }
   .presenca-item {
@@ -1588,10 +1593,10 @@
             <p class="section-hint">Opcional — JPEG, PNG ou PDF</p>
             <div class="comprovante-box" onclick="document.getElementById('f-comprovante').click()" id="comp-box">
               <i class="ti ti-cloud-upload"></i>
-              <p>Clique para enviar foto do comprovante</p>
+              <p>Clique para enviar uma ou mais fotos/arquivos</p>
             </div>
-            <input type="file" id="f-comprovante" accept="image/*" style="display:none" onchange="previewComp(this)">
-            <img id="comp-preview" class="comprovante-preview" style="display:none" alt="Pré-visualização do comprovante">
+            <input type="file" id="f-comprovante" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" multiple style="display:none" onchange="previewComp(this)">
+            <div id="comp-previews" class="comprovantes-preview"></div>
           </div>
 
           <div class="actions">
@@ -1734,6 +1739,7 @@
 
   let reservas = [];
   let compBase64 = null;
+  let compAttachments = [];
   let editingReservaId = null;
   let syncQueue = Promise.resolve();
   let currentSession = null;
@@ -1820,7 +1826,7 @@
     setHidden('auth-logout-btn', !currentSession);
 
     // Ocultar cabeçalhos de ações se não houver permissão para nenhuma ação
-    const hasAnyActionLista = canUpdate || canPresence || canCancel || canConfirmPagamento;
+    const hasAnyActionLista = canUpdate || canPresence || canCancel || canConfirmPagamento || canDelete;
     const hasAnyActionPlanilha = canUpdate || canPresence || canCancel || canConfirmPagamento || canDelete;
 
     const thAcoes = document.querySelector('.agenda-table th.center:last-child');
@@ -1976,6 +1982,7 @@
       vendaRealizada: typeof item.venda_realizada === 'boolean' ? item.venda_realizada : !!item.vendaRealizada,
       pagamentoConfirmado: typeof item.pagamento_confirmado === 'boolean' ? item.pagamento_confirmado : !!item.pagamentoConfirmado,
       comprovante: item.comprovante || null,
+      anexos: Array.isArray(item.anexos) ? item.anexos : (item.comprovante ? [{ name: 'Comprovante', type: 'image/*', data: item.comprovante }] : []),
       obs: item.obs || '',
       presenca,
       created_at: item.created_at || null,
@@ -2003,6 +2010,7 @@
       pagamento_confirmado: !!item.pagamentoConfirmado,
       cancelada,
       comprovante: item.comprovante || null,
+      anexos: Array.isArray(item.anexos) ? item.anexos : [],
       obs: item.obs || null,
       updated_at: new Date().toISOString()
     };
@@ -2179,18 +2187,46 @@
     renderDraftReserva();
   }
 
+  function renderCompAttachments() {
+    const host = document.getElementById('comp-previews');
+    if (!host) return;
+    host.innerHTML = compAttachments.map((file, index) => {
+      const visual = String(file.type || '').startsWith('image/')
+        ? `<img src="${file.data}" alt="${escHtml(file.name)}" onclick="event.stopPropagation(); abrirAnexoFormulario(${index})">`
+        : `<div class="file-label"><i class="ti ti-file"></i> ${escHtml(file.name)}</div>`;
+      return `<div class="comprovante-item">${visual}<button type="button" class="remove-file" onclick="event.stopPropagation(); removerAnexoFormulario(${index})" title="Remover arquivo"><i class="ti ti-x"></i></button></div>`;
+    }).join('');
+  }
+
   function previewComp(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      compBase64 = e.target.result;
-      const preview = document.getElementById('comp-preview');
-      preview.src = compBase64;
-      preview.style.display = 'block';
-      document.getElementById('comp-box').style.display = 'none';
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    Promise.all(files.map(file => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ name: file.name, type: file.type || 'application/octet-stream', data: reader.result });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    }))).then(filesRead => {
+      compAttachments = compAttachments.concat(filesRead);
+      compBase64 = compAttachments[0]?.data || null;
+      input.value = '';
+      document.getElementById('comp-box').style.display = 'block';
+      renderCompAttachments();
+    }).catch(() => toast('Não foi possível ler um dos arquivos.', 'danger'));
+  }
+
+  function removerAnexoFormulario(index) {
+    compAttachments.splice(index, 1);
+    compBase64 = compAttachments[0]?.data || null;
+    renderCompAttachments();
+  }
+
+  function abrirAnexoFormulario(index) {
+    const item = compAttachments[index];
+    if (item?.data && String(item.type).startsWith('image/')) {
+      document.getElementById('modal-img-src').src = item.data;
+      document.getElementById('modal-img').style.display = 'flex';
+    }
   }
 
   function limparForm() {
@@ -2199,9 +2235,10 @@
     document.getElementById('f-data-pagamento').value = '';
     document.getElementById('f-local').value = 'ambos';
     document.getElementById('f-comprovante').value = '';
-    document.getElementById('comp-preview').style.display = 'none';
     document.getElementById('comp-box').style.display = 'block';
     compBase64 = null;
+    compAttachments = [];
+    renderCompAttachments();
     editingReservaId = null;
     const saveBtn = document.getElementById('save-reserva-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
@@ -2221,18 +2258,9 @@
     document.getElementById('f-motivo').value = item.motivo || '';
     document.getElementById('f-local').value = item.localReserva || 'ambos';
     document.getElementById('f-obs').value = item.obs || '';
-    compBase64 = item.comprovante || null;
-
-    const preview = document.getElementById('comp-preview');
-    const box = document.getElementById('comp-box');
-    if (compBase64) {
-      preview.src = compBase64;
-      preview.style.display = 'block';
-      box.style.display = 'none';
-    } else {
-      preview.style.display = 'none';
-      box.style.display = 'block';
-    }
+    compAttachments = Array.isArray(item.anexos) ? item.anexos.slice() : [];
+    compBase64 = compAttachments[0]?.data || item.comprovante || null;
+    renderCompAttachments();
 
     editingReservaId = item.id;
     const saveBtn = document.getElementById('save-reserva-btn');
@@ -2291,7 +2319,8 @@
       item.motivo = motivo;
       item.localReserva = localReserva;
       item.obs = obs;
-      item.comprovante = compBase64;
+      item.anexos = compAttachments;
+      item.comprovante = compAttachments[0]?.data || null;
       toast('Reserva atualizada com sucesso!');
     } else {
       if (!requirePermission('reservas.create', 'Seu usuário não pode criar reservas.')) return;
@@ -2310,7 +2339,8 @@
         cancelada: false,
         presencaConfirmada: false,
         vendaRealizada: false,
-        comprovante: compBase64,
+        comprovante: compAttachments[0]?.data || null,
+        anexos: compAttachments,
         presenca: 'pendente'
       });
       toast('Reserva salva com sucesso!');
@@ -2340,7 +2370,8 @@
     const canNoShow = hasPermission('reservas.no_show');
     const canCancel = hasPermission('reservas.cancel');
     const canConfirmPagamento = hasPermission('pagamentos.confirm');
-    const hasAnyActionLista = canUpdate || canCheckin || canNoShow || canCancel || canConfirmPagamento;
+    const canDelete = hasPermission('reservas.delete');
+    const hasAnyActionLista = canUpdate || canCheckin || canNoShow || canCancel || canConfirmPagamento || canDelete;
 
     document.getElementById('agenda-count').textContent = `${agenda.length} reserva${agenda.length === 1 ? '' : 's'}`;
     const cobertos = agenda.filter(item => !isCancelada(item)).reduce((soma, item) => soma + Number(item.pessoas || 0), 0);
@@ -2392,6 +2423,7 @@
               ? `<button class="btn pay-btn active mini-btn" onclick='setPagamento(${jsStr(item.id)}, false)' title="Pagamento confirmado — clique para desfazer"><i class="ti ti-cash"></i></button>`
               : `<button class="btn pay-btn mini-btn" onclick='setPagamento(${jsStr(item.id)}, true)' title="Confirmar pagamento"><i class="ti ti-cash"></i></button>`) : ''}
             ${canCancel ? (!isCancelada(item) ? `<button class="btn mini-btn" onclick='cancelarReserva(${jsStr(item.id)})' title="Cancelar reserva"><i class="ti ti-ban"></i></button>` : `<button class="btn mini-btn" onclick='reativarReserva(${jsStr(item.id)})' title="Reativar reserva"><i class="ti ti-arrow-back-up"></i></button>`) : ''}
+            ${canDelete ? `<button class="btn danger mini-btn" onclick='excluir(${jsStr(item.id)})' title="Excluir"><i class="ti ti-trash"></i></button>` : ''}
           </div>
         </td>` : ''}
       </tr>`;
@@ -2620,16 +2652,31 @@
     toast('Reserva reativada.');
   }
 
-  function excluir(id) {
+  async function excluir(id) {
     if (!requirePermission('reservas.delete', 'Seu usuário não pode excluir reservas.')) return;
     if (!confirm('Excluir esta reserva?')) return;
+    const itemRemovido = reservas.find(item => item.id === id);
     reservas = reservas.filter(item => item.id !== id);
+    const supabase = await getSupabaseClient();
+    if (supabase) {
+      const { error } = await supabase.from('reservas').delete().eq('id', id);
+      if (error) {
+        if (itemRemovido) reservas.push(itemRemovido);
+        salvar();
+        renderLista();
+        renderPlanilha();
+        renderPresenca();
+        renderAlterar();
+        toast('Não foi possível excluir a reserva: ' + error.message, 'danger');
+        return;
+      }
+    }
     salvar();
     renderLista();
     renderPlanilha();
     renderPresenca();
     renderAlterar();
-    toast('Reserva excluÃ­da.');
+    toast('Reserva excluída.');
   }
 
   function cancelarReserva(id) {

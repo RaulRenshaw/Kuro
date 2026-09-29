@@ -14,7 +14,8 @@ Estrutura pronta para subir no git com login via Supabase integrado ao painel.
 ## Antes de subir
 
 1. Rode `db/schema-auth.sql` no Supabase.
-2. Se precisar trocar projeto/chave, edite `config/supabase-config.js`.
+2. Rode `db/migration-reservas-anexos.sql` para habilitar múltiplos anexos por reserva.
+3. Se precisar trocar projeto/chave, edite `config/supabase-config.js`.
 3. Crie o primeiro usuário no Supabase Auth.
 4. Atribua roles diretamente no banco, se necessário.
 
