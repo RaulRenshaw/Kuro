@@ -1760,10 +1760,32 @@
   }
 
   function salvar() {
-    localStorage.setItem('reservas', JSON.stringify(reservas));
+    salvarCacheLocal();
     syncQueue = syncQueue
       .then(() => sincronizarBanco());
     return syncQueue;
+  }
+
+  function salvarCacheLocal() {
+    // Os arquivos ficam no Supabase; mantê-los também no localStorage pode
+    // ultrapassar a cota do navegador e impedir até o envio ao banco.
+    const cache = reservas.map(item => ({
+      ...item,
+      comprovante: null,
+      anexos: (Array.isArray(item.anexos) ? item.anexos : []).map(({ name, type }) => ({ name, type }))
+    }));
+    try {
+      localStorage.setItem('reservas', JSON.stringify(cache));
+    } catch (error) {
+      try {
+        // Remove a cópia antiga, que pode conter anexos em Base64, e grava
+        // novamente apenas os dados leves necessários para o cache offline.
+        localStorage.removeItem('reservas');
+        localStorage.setItem('reservas', JSON.stringify(cache));
+      } catch (retryError) {
+        console.warn('Cache local indisponível; os dados serão carregados do Supabase.', retryError);
+      }
+    }
   }
 
   async function getSupabaseClient() {
@@ -2031,7 +2053,7 @@
     // (ex: alguém apagou tudo) — não deve reenviar o cache local antigo,
     // senão registros apagados no banco voltam a aparecer sozinhos.
     reservas = (data || []).map(normalizarReserva);
-    localStorage.setItem('reservas', JSON.stringify(reservas));
+    salvarCacheLocal();
   }
 
   function fmtDate(valor) {
@@ -2356,7 +2378,7 @@
       showScreen('lista');
     } catch (error) {
       reservas = reservasAntes;
-      localStorage.setItem('reservas', JSON.stringify(reservas));
+      salvarCacheLocal();
       const detalhe = error?.message || error?.details || error?.hint || 'falha de comunicação com o Supabase';
       toast(`Não foi possível salvar a reserva/anexo: ${detalhe}`, 'danger');
       console.error('Erro ao salvar reserva/anexo no Supabase:', error);
