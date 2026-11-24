@@ -1762,8 +1762,7 @@
   function salvar() {
     localStorage.setItem('reservas', JSON.stringify(reservas));
     syncQueue = syncQueue
-      .then(() => sincronizarBanco())
-      .catch(error => console.error('Erro ao sincronizar Supabase:', error));
+      .then(() => sincronizarBanco());
     return syncQueue;
   }
 
@@ -2288,7 +2287,7 @@
     showScreen('lista');
   }
 
-  function salvarReserva() {
+  async function salvarReserva() {
     const pagante = document.getElementById('f-pagante').value.trim();
     const reserva = document.getElementById('f-reserva').value.trim();
     const dataReserva = document.getElementById('f-data-reserva').value;
@@ -2305,6 +2304,7 @@
       return;
     }
 
+    const reservasAntes = structuredClone(reservas);
     if (editingReservaId) {
       if (!requirePermission('reservas.update', 'Seu usuário não pode atualizar reservas.')) return;
       const item = reservas.find(reserva => reserva.id === editingReservaId);
@@ -2346,13 +2346,21 @@
       toast('Reserva salva com sucesso!');
     }
 
-    salvar();
-    limparForm();
-    renderLista();
-    renderPlanilha();
-    renderPresenca();
-    renderAlterar();
-    showScreen('lista');
+    try {
+      await salvar();
+      limparForm();
+      renderLista();
+      renderPlanilha();
+      renderPresenca();
+      renderAlterar();
+      showScreen('lista');
+    } catch (error) {
+      reservas = reservasAntes;
+      localStorage.setItem('reservas', JSON.stringify(reservas));
+      const detalhe = error?.message || error?.details || error?.hint || 'falha de comunicação com o Supabase';
+      toast(`Não foi possível salvar a reserva/anexo: ${detalhe}`, 'danger');
+      console.error('Erro ao salvar reserva/anexo no Supabase:', error);
+    }
   }
 
   function renderLista() {
